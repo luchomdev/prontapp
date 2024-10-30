@@ -46,14 +46,8 @@ jobs:
         run: |
           DEPLOY_PATH="/var/www/frontend"
           
-          echo "Verifying deployment directory..."
-          ssh ec2 "[ -d ${DEPLOY_PATH}/.git ] || git clone -c core.sshCommand=\"ssh -i /home/ubuntu/.ssh/deploy_key_frontend\" git@github.com:prontappsas/prontappweb.git ${DEPLOY_PATH}"
-          
           echo "Updating repository..."
-          ssh ec2 "cd ${DEPLOY_PATH} && \
-                   git -c core.sshCommand=\"ssh -i /home/ubuntu/.ssh/deploy_key_frontend\" fetch origin prod && \
-                   git -c core.sshCommand=\"ssh -i /home/ubuntu/.ssh/deploy_key_frontend\" checkout prod && \
-                   git -c core.sshCommand=\"ssh -i /home/ubuntu/.ssh/deploy_key_frontend\" pull origin prod"
+          ssh ec2 "cd ${DEPLOY_PATH} && git pull origin prod"
           
           echo "Copying environment file..."
           scp .env.production ec2:${DEPLOY_PATH}/.env.production
