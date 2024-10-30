@@ -25,7 +25,12 @@ jobs:
           mkdir -p ~/.ssh
           echo "$SSH_PRIVATE_KEY" > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
-          echo -e "Host ec2\n\tHostName $SSH_HOST\n\tUser $SSH_USER\n\tIdentityFile ~/.ssh/deploy_key\n\tStrictHostKeyChecking no" > ~/.ssh/config
+          echo -e "StrictHostKeyChecking no\n" > ~/.ssh/config
+          echo -e "Host ec2\n\tHostName $SSH_HOST\n\tUser $SSH_USER\n\tIdentityFile ~/.ssh/deploy_key\n\tStrictHostKeyChecking no" >> ~/.ssh/config
+          
+          # Debug SSH config
+          echo "Testing SSH connection..."
+          ssh -v ec2 "echo Connected successfully"
 
       - name: Create env file
         run: |
@@ -46,12 +51,17 @@ jobs:
         run: |
           DEPLOY_PATH="/var/www/frontend"
           
-          # Usar el mismo comando que funciona manualmente
+          # Test SSH connection first
+          echo "Testing SSH connection to EC2..."
+          ssh -v ec2 "pwd && whoami"
+          
+          # Then proceed with deployment
           echo "Pulling latest changes..."
-          ssh ec2 "cd ${DEPLOY_PATH} && GIT_SSH_COMMAND=\"ssh -i ~/.ssh/deploy_key_frontend\" git pull origin prod"
+          ssh ec2 "cd ${DEPLOY_PATH} && \
+              GIT_SSH_COMMAND=\"ssh -i /home/ubuntu/.ssh/deploy_key_frontend\" git pull origin prod"
           
           echo "Copying environment file..."
-          scp .env.production ec2:${DEPLOY_PATH}/.env.production
+          scp -v .env.production ec2:${DEPLOY_PATH}/.env.production
           
           echo "Installing dependencies..."
           ssh ec2 "cd ${DEPLOY_PATH} && npm install"
@@ -63,5 +73,6 @@ jobs:
           ssh ec2 "cd ${DEPLOY_PATH} && pm2 restart ecosystem.config.js || pm2 start ecosystem.config.js"
 
       - name: Verify Deployment
+        if: success()
         run: |
           ssh ec2 "cd ${DEPLOY_PATH} && pwd && ls -la && pm2 list"
