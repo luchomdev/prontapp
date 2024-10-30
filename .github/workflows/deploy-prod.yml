@@ -47,7 +47,9 @@ jobs:
           DEPLOY_PATH="/var/www/frontend"
           
           echo "Updating repository..."
-          ssh ec2 "cd ${DEPLOY_PATH} && git pull origin prod"
+          ssh ec2 "cd ${DEPLOY_PATH} && \
+                   export GIT_SSH_COMMAND='ssh -i /home/ubuntu/.ssh/deploy_key_frontend -o IdentitiesOnly=yes' && \
+                   git pull origin prod"
           
           echo "Copying environment file..."
           scp .env.production ec2:${DEPLOY_PATH}/.env.production
