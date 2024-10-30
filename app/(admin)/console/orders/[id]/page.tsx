@@ -1,6 +1,6 @@
 "use client"
 import { MdOutlineKeyboardArrowLeft } from "react-icons/md";
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import AdminOrderInfo from '@/app/(admin)/components/orders/AdminOrderInfo';
 import AdminCustomerInfo from '@/app/(admin)/components/orders/AdminCustomerInfo';
@@ -35,28 +35,33 @@ const AdminOrderDetailPage: React.FC = () => {
     const [orderData, setOrderData] = useState<OrderDetail | null>(null);
     const [isLoading, setIsLoading] = useState(true);
 
-    useEffect(() => {
-        const fetchOrderDetail = async () => {
-            setIsLoading(true);
-            try {
-                const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/orders?order_id=${params.id}`, {
-                    credentials: 'include'
-                });
-                if (!response.ok) throw new Error('Failed to fetch order details');
-                const data = await response.json();
-                setOrderData(data.orders[0]);
-                console.log("OrderData : ",orderData)
-            } catch (error) {
-                console.error('Error fetching order details:', error);
-            } finally {
-                setIsLoading(false);
-            }
-        };
+    const fetchOrderDetail = useCallback(async () => {
+        setIsLoading(true);
+        try {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/orders?order_id=${params.id}`, {
+                credentials: 'include'
+            });
+            if (!response.ok) throw new Error('Failed to fetch order details');
+            const data = await response.json();
+            setOrderData(data.orders[0]);
+        } catch (error) {
+            console.error('Error fetching order details:', error);
+        } finally {
+            setIsLoading(false);
+        }
+    }, [params.id]);
 
+    useEffect(() => {
         if (params.id) {
             fetchOrderDetail();
         }
-    }, [params.id]);
+    }, [params.id, fetchOrderDetail]);
+
+    useEffect(() => {
+        if (orderData) {
+            console.log("OrderData : ", orderData);
+        }
+    }, [orderData]);
 
     return (
         <div className="container mx-auto px-4 py-8">

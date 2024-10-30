@@ -40,7 +40,7 @@ const MegaProductCard: React.FC<MegaProductCardProps> = React.memo(({ product, o
         <div className="bg-white shadow-md rounded-lg p-4 mb-2 flex justify-between items-start">
             <div className="flex items-start">
                 <div className="flex flex-wrap gap-2 mr-4">
-                    {images.map((image: { url: string }, index: number) => (
+                    { images && images.length>0 && images.map((image: { url: string }, index: number) => (
                         <div key={index} className="w-16 h-16 relative">
                             <Image
                                 src={image.url || '/placeholder-image.jpg'}

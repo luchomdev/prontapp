@@ -1,5 +1,6 @@
 "use client"
 import React, { useState } from 'react';
+import Image from 'next/image';
 import ModalSetStar from '@/components/panel/ModalSetStar';
 
 interface ProductItemProps {
@@ -7,8 +8,8 @@ interface ProductItemProps {
   amount: number;
   price: number;
   imageUrl: string;
-  productId:string;
-  orderId:string;
+  productId: string;
+  orderId: string;
   delivery_state: number;
   last_state: number | null
 }
@@ -26,12 +27,21 @@ const ProductItem: React.FC<ProductItemProps> = ({
   const [showRatingModal, setShowRatingModal] = useState(false);
 
   const canRate = delivery_state === 4 && last_state === 3;
-  
 
   return (
     <div className="flex items-center justify-between border-b py-4">
       <div className="flex items-center">
-        <img src={imageUrl} alt={name} className="w-20 h-20 object-cover mr-4" />
+        <div className="relative w-20 h-20 mr-4">
+          <Image
+            src={imageUrl}
+            alt={name}
+            fill
+            sizes="(max-width: 768px) 80px, 100px"
+            style={{
+              objectFit: 'cover',
+            }}
+          />
+        </div>
         <div>
           <h3 className="font-semibold">{name}</h3>
           <p className="text-gray-600">Cantidad: {amount}</p>
@@ -95,7 +105,7 @@ const OrderProducts: React.FC<OrderProductsProps> = ({ stocks, total_shipping_co
         ))}
       </div>
       <div className="mt-6 space-y-2">
-        <p className="text-right"><strong>Valor de Envío:</strong> ${total_shipping_cost || 0}</p>
+        <p className="text-right"><strong>Valor de Envío:</strong> ${Number(total_shipping_cost || 0).toLocaleString()}</p>
         <p className="text-right text-xl font-semibold">
           <strong>Total de la Orden:</strong> ${(totalOrder + (Number(total_shipping_cost) || 0)).toLocaleString()}
         </p>

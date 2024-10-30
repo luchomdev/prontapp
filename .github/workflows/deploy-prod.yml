@@ -1,0 +1,72 @@
+name: Deploy Frontend to Production
+
+on:
+  push:
+    branches:
+      - prod
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+          
+      - name: Configure SSH
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+        run: |
+          mkdir -p ~/.ssh
+          echo "$SSH_PRIVATE_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          echo -e "Host ec2\n\tHostName $SSH_HOST\n\tUser $SSH_USER\n\tIdentityFile ~/.ssh/deploy_key\n\tStrictHostKeyChecking no" > ~/.ssh/config
+
+      - name: Create env file
+        run: |
+          cat << EOF > .env.production
+          API_BASE_URL=https://api.prontapp.co/api/v1
+          IMAGE_BASE_URL=https://api.prontapp.co
+          NEXT_PUBLIC_IMAGE_BASE_URL=https://api.prontapp.co
+          NEXT_PUBLIC_API_URL=https://api.prontapp.co/api/v1
+          NEXT_PUBLIC_EPAYCO_TEST=false
+
+          JWT_SECRET=${{ secrets.JWT_SECRET }}
+
+          DOMAIN_URL=https://www.prontapp.co
+          HTTP_S_DOMAIN_URL=https://www.prontapp.co
+          EOF
+
+      - name: Deploy to EC2
+        run: |
+          DEPLOY_PATH="/var/www/frontend"
+          
+          echo "Verifying deployment directory..."
+          ssh ec2 "[ -d ${DEPLOY_PATH}/.git ] || GIT_SSH_COMMAND='ssh -i /home/ubuntu/.ssh/deploy_key_frontend' git clone git@github.com:prontappsas/prontappweb.git ${DEPLOY_PATH}"
+          
+          echo "Updating repository..."
+          ssh ec2 "cd ${DEPLOY_PATH} && \
+                   GIT_SSH_COMMAND='ssh -i /home/ubuntu/.ssh/deploy_key_frontend' git fetch origin prod && \
+                   GIT_SSH_COMMAND='ssh -i /home/ubuntu/.ssh/deploy_key_frontend' git checkout prod && \
+                   GIT_SSH_COMMAND='ssh -i /home/ubuntu/.ssh/deploy_key_frontend' git pull origin prod"
+          
+          echo "Copying environment file..."
+          scp .env.production ec2:${DEPLOY_PATH}/.env.production
+          
+          echo "Installing dependencies..."
+          ssh ec2 "cd ${DEPLOY_PATH} && npm install"
+          
+          echo "Building application..."
+          ssh ec2 "cd ${DEPLOY_PATH} && npm run build"
+          
+          echo "Starting/Restarting PM2..."
+          ssh ec2 "cd ${DEPLOY_PATH} && pm2 restart ecosystem.config.js || pm2 start ecosystem.config.js"
+
+      - name: Verify Deployment
+        run: |
+          ssh ec2 "cd ${DEPLOY_PATH} && pwd && ls -la && pm2 list"

@@ -1,6 +1,8 @@
+import { Suspense } from "react";
 import PageTitle from "@/components/PageTitle";
 import Container from "@/components/Container";
 import RecoveryCodeVerificationForm from "@/components/auth/RecoveryCodeVerificationForm";
+import SkeletonRecoveryCodeVerificationForm from "@/components/skeletons/SkeletonRecoveryCodeVerificationForm";
 
 
 const RecoveryVerifyCodePage = () => {
@@ -10,7 +12,9 @@ const RecoveryVerifyCodePage = () => {
             <Container>
                 <div className="flex items-center justify-center sm:px-6 lg:px-8">
                     <div className="max-w-sm w-full  mx-auto">
-                        <RecoveryCodeVerificationForm />
+                        <Suspense fallback={<SkeletonRecoveryCodeVerificationForm />}>
+                            <RecoveryCodeVerificationForm />
+                        </Suspense>
                     </div>
                 </div>
             </Container>

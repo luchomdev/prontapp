@@ -17,9 +17,10 @@ const SigninForm: React.FC<SigninFormProps> = ({ onSuccess }) => {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const { setUser, setAuthenticated } = useStore((state) => ({
+  const { setUser, setAuthenticated, setShippingAddress } = useStore((state) => ({
     setUser: state.setUser,
-    setAuthenticated: state.setAuthenticated
+    setAuthenticated: state.setAuthenticated,
+    setShippingAddress: state.setShippingAddress
   }));
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -56,6 +57,20 @@ const SigninForm: React.FC<SigninFormProps> = ({ onSuccess }) => {
       setUser(data.user);
       setAuthenticated(true);
       
+      // Asignar la dirección por defecto al estado global
+      if (data.user.defaultAddress) {
+        const addressParts = data.user.defaultAddress.address.split('~');
+        const address = addressParts[0].trim();
+        const addressComplement = addressParts[1] ? addressParts[1].trim() : '';
+        
+        setShippingAddress({
+          city_id: data.user.defaultAddress.city_id,
+          cityName: data.user.defaultAddress.cityName,
+          address: address,
+          addressComplement: addressComplement
+        });
+      }
+
       // Redirección basada en el rol del usuario
       if (data.user.role === 'admin') {
         router.replace("/console/dashboard");

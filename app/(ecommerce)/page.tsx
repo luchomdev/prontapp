@@ -4,14 +4,21 @@ import ImageSlider from "@/components/ImageSlider";
 import NewsletterSubscription from "@/components/NewsletterSubscription";
 import ProductCategorySection from '@/components/ProductCategorySection';
 import RecentlyViewed from "@/components/RecentlyViewed";
-import { getProductsByCategoriesHome, getSliderImages } from "@/lib/dataLayer";
+import { getProductsByCategoriesHome, getSliderImages, getProductsPublic, getTrendyProducts, getDiscountProducts, getBestSellerProducts, getPublicConfig } from "@/lib/dataLayer";
+import ProductSectionContainer from '@/components/home/ProductSectionContainer';
+
+type Props = {
+  params: { id: string }
+  searchParams: { [key: string]: string | string[] | undefined }
+}
 
 export async function generateMetadata(
+  { params, searchParams }: Props,
   parent: ResolvingMetadata
 ): Promise<Metadata> {
   const categoriesData = await getProductsByCategoriesHome();
   const categories = Object.values(categoriesData).map(cat => cat.name).join(', ');
-  
+
   return {
     title: 'Prontapp E-commerce | Tu tienda en línea favorita',
     description: `Descubre nuestra amplia selección de productos en categorías como ${categories}. Compra online con envío rápido y seguro.`,
@@ -33,19 +40,97 @@ export async function generateMetadata(
       card: 'summary_large_image',
       title: 'Prontapp E-commerce | Compra online fácil y seguro',
       description: `Las mejores ofertas en ${Object.keys(categoriesData).length} categorías de productos.`,
-      images: ['https://pront.app/og-home.jpg'],
+      images: ['https://pront.app/x-home.jpg'],
     },
   }
 }
 
 export default async function Home() {
   try {
+    // Datos config
+    const config = await getPublicConfig("urlAllHotdeals,titleHotdeals,catHotdeals,titleProductsWithDiscounts,urlProductsWithDiscounts,titleTrendyProducts,urlTrendyProducts,titleBestsellerProducts,urlBestsellerProducts")
     const categoriesData = await getProductsByCategoriesHome();
     const headersBanners = await getSliderImages();
+    const hotDealsProducts = await getProductsPublic({ category_id: config.catHotdeals ? config.catHotdeals : "cb587118-4629-4ba6-a390-c613a04aac9b", limit: 20 })
+    const hotDeals = hotDealsProducts.products.map((product) => ({
+      id: product.id,
+      name: product.name,
+      seo_slug: product.seo_slug ? product.seo_slug : "",
+      price_fake_discount: product.price_fake_discount ? Number(product.price_fake_discount) : null,
+      precio_final: product.precio_final,
+      images: JSON.parse(product.images)
+    }))
+
+    const [trendy, discounted, bestSellers] = await Promise.all([
+      getTrendyProducts({ limit: 20 }),
+      getDiscountProducts({ limit: 20 }),
+      getBestSellerProducts({ limit: 20 })
+    ]);
+    const discountedProducts = discounted.products.map((product) => ({
+      id: product.id,
+      name: product.name,
+      seo_slug: product.seo_slug ? product.seo_slug : "",
+      price_fake_discount: product.price_fake_discount ? Number(product.price_fake_discount) : null,
+      precio_final: product.precio_final,
+      images: JSON.parse(product.images)
+    }))
+    const trendyProducts = trendy.products.map((product) => ({
+      id: product.id,
+      name: product.name,
+      seo_slug: product.seo_slug ? product.seo_slug : "",
+      price_fake_discount: product.price_fake_discount ? Number(product.price_fake_discount) : null,
+      precio_final: product.precio_final,
+      images: JSON.parse(product.images)
+    }))
+    const bestSellerProducts = bestSellers.products.map((product) => ({
+      id: product.id,
+      name: product.name,
+      seo_slug: product.seo_slug ? product.seo_slug : "",
+      price_fake_discount: product.price_fake_discount ? Number(product.price_fake_discount) : null,
+      precio_final: product.precio_final,
+      images: JSON.parse(product.images)
+    }))
+
+
+
 
     return (
       <div className="flex flex-col min-h-screen">
         <ImageSlider images={headersBanners} />
+        {hotDeals && hotDeals.length > 0 &&
+          <ProductSectionContainer
+            title={config.titleHotdeals ? config.titleHotdeals : ""}
+            viewAllLink={config.urlAllHotdeals ? config.urlAllHotdeals : ""}
+            products={hotDeals}
+            isHighlight={true}
+          />
+        }
+
+        {discountedProducts && discountedProducts.length > 0 &&
+          <ProductSectionContainer
+            title={config.titleProductsWithDiscounts ? config.titleProductsWithDiscounts : "" }
+            viewAllLink={config.urlProductsWithDiscounts ? config.urlProductsWithDiscounts : ""}
+            products={discountedProducts}
+            isHighlight={true}
+          />
+        }
+
+        {trendyProducts && trendyProducts.length > 0 &&
+          <ProductSectionContainer
+            title={config.titleTrendyProducts ? config.titleTrendyProducts : ""}
+            viewAllLink={config.urlTrendyProducts ? config.urlTrendyProducts : "" }
+            products={trendyProducts}
+          />
+        }
+
+        {bestSellerProducts && bestSellerProducts.length > 0 &&
+          <ProductSectionContainer
+            title={config.titleBestsellerProducts ? config.titleBestsellerProducts : "" }
+            viewAllLink={config.urlBestsellerProducts ? config.urlBestsellerProducts : ""}
+            products={bestSellerProducts}
+          />
+        }
+
 
         {Object.entries(categoriesData).map(([id, category]) => (
           <ProductCategorySection

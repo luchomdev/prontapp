@@ -1,5 +1,5 @@
 "use client"
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import AccountUserCard from '@/app/(admin)/components/Users/AccountUserCard';
 import EditAccountForm from '@/app/(admin)/components/Users/EditAccountForm';
@@ -16,14 +16,30 @@ const AccountPage = () => {
   const [showToaster, setShowToaster] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   
-  useEffect(() => {
-    if (!userId) {
-      return;
-    }
-    checkAuth();
-  }, [userId]);
+  const showToasterMessage = useCallback((message: string, type: 'success' | 'error') => {
+    setToasterMessage(message);
+    setToasterType(type);
+    setShowToaster(true);
+  }, []);
 
-  const checkAuth = async () => {
+  const fetchUserData = useCallback(async () => {
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users/${userId}`, {
+        credentials: 'include',
+      });
+      if (response.ok) {
+        const userData = await response.json();
+        setUser(userData);
+      } else {
+        showToasterMessage('Error al cargar los datos del usuario', 'error');
+      }
+    } catch (error) {
+      console.error('Error fetching user data:', error);
+      showToasterMessage('Error al conectar con el servidor', 'error');
+    }
+  }, [userId, showToasterMessage]);
+
+  const checkAuth = useCallback(async () => {
     setIsLoading(true);
     try {
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users/check-auth`, {
@@ -47,24 +63,14 @@ const AccountPage = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [userId, router, showToasterMessage, fetchUserData]);
 
-  const fetchUserData = async () => {
-    try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users/${userId}`, {
-        credentials: 'include',
-      });
-      if (response.ok) {
-        const userData = await response.json();
-        setUser(userData);
-      } else {
-        showToasterMessage('Error al cargar los datos del usuario', 'error');
-      }
-    } catch (error) {
-      console.error('Error fetching user data:', error);
-      showToasterMessage('Error al conectar con el servidor', 'error');
+  useEffect(() => {
+    if (!userId) {
+      return;
     }
-  };
+    checkAuth();
+  }, [userId, checkAuth]);
 
   const handleEditClick = () => {
     setShowEditForm(true);
@@ -77,12 +83,6 @@ const AccountPage = () => {
   const handleSave = () => {
     fetchUserData();
     showToasterMessage('Datos actualizados correctamente', 'success');
-  };
-
-  const showToasterMessage = (message: string, type: 'success' | 'error') => {
-    setToasterMessage(message);
-    setToasterType(type);
-    setShowToaster(true);
   };
 
   if (isLoading) {

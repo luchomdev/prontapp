@@ -1,5 +1,5 @@
 "use client"
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import UserInfoForm from '@/components/panel/UserInfoForm';
 
 interface BasicInformationProps {
@@ -28,7 +28,7 @@ const BasicInformation: React.FC<BasicInformationProps> = ({ user }) => {
   const [userData, setUserData] = useState<UserData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  const fetchUserData = async () => {
+  const fetchUserData = useCallback(async () => {
     if (!user || !user.id) {
       setIsLoading(false);
       return;
@@ -47,12 +47,12 @@ const BasicInformation: React.FC<BasicInformationProps> = ({ user }) => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [user]);
 
   useEffect(() => {
     console.log('Renderiza el componente BasicInformation tsx');
     fetchUserData();
-  }, [user]);
+  }, [fetchUserData]);
 
   const handleUpdateSuccess = () => {
     fetchUserData();

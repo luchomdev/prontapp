@@ -48,12 +48,26 @@ const ProductsAdminPage = () => {
     const [toasterType, setToasterType] = useState<'success' | 'error'>('success');
     const [showToaster, setShowToaster] = useState(false);
     const [totalPages, setTotalPages] = useState(1);
-
     const isInitialMount = useRef(true);
-    const [isLoadingMore, setIsLoadingMore] = useState(false);
     const [isGrouping, setIsGrouping] = useState(false);
     const productsToGroup = useStore(state => state.productsToGroup);
     const clearProductsToGroup = useStore(state => state.clearProductsToGroup);
+    const [isLoadingMore, setIsLoadingMore] = useState(false);
+    const isLoadingRef = useRef(isLoading);
+    const isLoadingMoreRef = useRef(isLoadingMore);
+    const pageRef = useRef(page);
+
+    useEffect(() => {
+        isLoadingRef.current = isLoading;
+    }, [isLoading]);
+
+    useEffect(() => {
+        isLoadingMoreRef.current = isLoadingMore;
+    }, [isLoadingMore]);
+
+    useEffect(() => {
+        pageRef.current = page;
+    }, [page]);
 
     const handleSessionExpired = useCallback(() => {
         setToasterMessage('La sesión ha expirado. Por favor, inicie sesión nuevamente.');
@@ -65,21 +79,20 @@ const ProductsAdminPage = () => {
     }, [router]);
 
     const fetchProducts = useCallback(async (loadMore = false) => {
-        if (loadMore) {
-            setIsLoadingMore(true);
-        } else {
-            setIsLoading(true);
-        }
-        const currentPage = loadMore ? page + 1 : 1;
+        if (isLoadingRef.current || isLoadingMoreRef.current) return;
+
+        const loadingState = loadMore ? setIsLoadingMore : setIsLoading;
+        loadingState(true);
+
+        const currentPage = loadMore ? pageRef.current + 1 : 1;
         try {
             const queryParams = new URLSearchParams({
                 page: currentPage.toString(),
                 limit: limit.toString(),
+                ...(filterParams.stockId && { stockId: filterParams.stockId }),
+                ...(filterParams.search && { search: filterParams.search }),
+                ...(filterParams.category_id && { category_id: filterParams.category_id }),
             });
-
-            if (filterParams.stockId) queryParams.append('stockId', filterParams.stockId);
-            if (filterParams.search) queryParams.append('search', filterParams.search);
-            if (filterParams.category_id) queryParams.append('category_id', filterParams.category_id);
 
             const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/products?${queryParams}`, {
                 credentials: 'include'
@@ -94,14 +107,8 @@ const ProductsAdminPage = () => {
             }
 
             const data = await response.json();
-            console.log('Productos recibidos:', data);
 
-            if (loadMore) {
-                setProducts(prevProducts => [...prevProducts, ...data.products]);
-            } else {
-                setProducts(data.products);
-            }
-
+            setProducts(prevProducts => loadMore ? [...prevProducts, ...data.products] : data.products);
             setPage(currentPage);
             setTotalPages(data.totalPages);
             setHasMore(currentPage < data.totalPages);
@@ -111,42 +118,37 @@ const ProductsAdminPage = () => {
             setToasterType('error');
             setShowToaster(true);
         } finally {
-            setIsLoading(false);
-            setIsLoadingMore(false);
+            loadingState(false);
         }
-    }, [filterParams, page, limit, router]);
-    useEffect(() => {
-        fetchProducts();
-    }, [filterParams]);
+    }, [filterParams, limit, handleSessionExpired]);
 
     useEffect(() => {
         if (isInitialMount.current) {
             isInitialMount.current = false;
-            fetchProducts();
+        } else {
+            setPage(1);
+            pageRef.current = 1;
         }
-    }, [fetchProducts]);
+        fetchProducts();
+    }, [filterParams, fetchProducts]);
 
     const handleEditProduct = useCallback((productId: string) => {
         router.push(`/console/products/edit/${productId}`)
-    }, []);
+    }, [router]);
 
     const handleGroupProducts = async () => {
-        if (productsToGroup.length < 2) return;
+        if (productsToGroup.length < 2 || isGrouping) return;
 
         setIsGrouping(true);
         try {
             const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/products/merge`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
+                headers: { 'Content-Type': 'application/json' },
                 credentials: 'include',
                 body: JSON.stringify({ productIds: productsToGroup }),
             });
 
-            if (!response.ok) {
-                throw new Error('Error al agrupar productos');
-            }
+            if (!response.ok) throw new Error('Error al agrupar productos');
 
             setToasterMessage('Productos agrupados exitosamente');
             setToasterType('success');
@@ -165,18 +167,17 @@ const ProductsAdminPage = () => {
 
     const handleFilterChange = (newFilterParams: FilterParams) => {
         setFilterParams(newFilterParams);
-        setPage(1);
     };
 
     const handleLoadMore = useCallback(() => {
-        if (page < totalPages && !isLoadingMore) {
+        if (pageRef.current < totalPages && !isLoadingMoreRef.current && !isLoadingRef.current) {
             fetchProducts(true);
         }
-    }, [page, totalPages, isLoadingMore, fetchProducts]);
-
+    }, [totalPages, fetchProducts]);
+    
     return (
         <div className="p-6">
-            
+
             {showToaster && (
                 <Toaster
                     message={toasterMessage}
@@ -190,12 +191,12 @@ const ProductsAdminPage = () => {
                     <Link href="/console/products/megabodega" title='Buscar en la Megabodega' className="bg-blue-500 hover:bg-blue-700 text-white text-sm font-bold py-1 px-2 rounded flex items-center mr-2">
                         <FaWarehouse className="mr-2 text-sm" /> Bodega Productos
                     </Link>
-                    <button 
+                    <button
                         className={`bg-green-500 hover:bg-green-700 text-white text-sm font-bold py-1 px-2 rounded flex items-center ${productsToGroup.length < 2 || isGrouping ? 'opacity-50 cursor-not-allowed' : ''}`}
                         onClick={handleGroupProducts}
                         disabled={productsToGroup.length < 2 || isGrouping}
                     >
-                        <FaObjectGroup className="mr-2 text-sm" /> 
+                        <FaObjectGroup className="mr-2 text-sm" />
                         {isGrouping ? 'Agrupando...' : 'Agrupar Productos'}
                     </button>
                     <Link href="/console/products/pending-star" title='Aprobar valoraciones realizadas' className="bg-blue-500 hover:bg-blue-700 text-white text-sm font-bold py-1 px-2 rounded flex items-center mr-2">
@@ -205,31 +206,31 @@ const ProductsAdminPage = () => {
             </div>
             <hr className="my-4 border-gray-300" />
             <ProductFilter onFilterChange={handleFilterChange} />
+
             <div className="space-y-4 mt-4">
                 {products.map(product => (
                     <ProductCard
                         key={product.id}
                         product={product}
                         onEdit={handleEditProduct}
-                        //onGroup={handleGroupProducts}
                     />
                 ))}
-                {isLoading && !isLoadingMore && (
+                {(isLoading || isLoadingMore) && (
                     <div className="flex justify-center items-center">
                         <FaSpinner className="animate-spin text-blue-500" size={24} />
                         <span className="ml-2">Cargando productos...</span>
                     </div>
                 )}
+
+                {!isLoading && (
+                    <LoadMoreData
+                        onLoadMore={handleLoadMore}
+                        isLoading={isLoadingMore}
+                        hasMore={hasMore}
+                    />
+                )}
             </div>
-            {!isLoading && (
-                <LoadMoreData
-                    onLoadMore={handleLoadMore}
-                    isLoading={isLoadingMore}
-                    hasMore={hasMore}
-                />
-            )}
-        </div>
-    );
+        </div>)
 };
 
 export default ProductsAdminPage;

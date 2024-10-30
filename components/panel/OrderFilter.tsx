@@ -49,7 +49,7 @@ const OrderFilter: React.FC<OrderFilterProps> = ({ onFilterChange, onResetFilter
             value={orderId}
             onChange={(e) => setOrderId(e.target.value)}
             className="w-full p-2 border border-gray-300 rounded-md"
-            placeholder="Ej. 1234"
+            placeholder="Ej. 1111367"
           />
         </div>
         <div>
@@ -62,6 +62,8 @@ const OrderFilter: React.FC<OrderFilterProps> = ({ onFilterChange, onResetFilter
             value={startDate}
             onChange={(e) => setStartDate(e.target.value)}
             className="w-full p-2 border border-gray-300 rounded-md"
+            lang="es"
+            placeholder="dd/mm/aaaa"
           />
         </div>
         <div>
@@ -74,6 +76,8 @@ const OrderFilter: React.FC<OrderFilterProps> = ({ onFilterChange, onResetFilter
             value={endDate}
             onChange={(e) => setEndDate(e.target.value)}
             className="w-full p-2 border border-gray-300 rounded-md"
+            lang="es"
+            placeholder="dd/mm/aaaa"
           />
         </div>
         <div className="flex items-end space-x-2">

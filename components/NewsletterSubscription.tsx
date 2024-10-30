@@ -57,7 +57,7 @@ const NewsletterSubscription: React.FC = () => {
                     <FaEnvelope className="text-white text-2xl mr-4" />
                     <div className="flex flex-col sm:flex-row sm:items-center">
                         <p className="text-white font-semibold text-lg mr-2">Suscríbete a nuestro boletín</p>
-                        <p className="text-white text-sm">… y recibe un cupón del 10% para tu primera compra.</p>
+                        <p className="text-white text-sm">… y recibe un cupones, novedades e información de interés</p>
                     </div>
                 </div>
                 <form onSubmit={handleSubmit} className="relative flex flex-shrink-0 w-full sm:w-[450px] lg:w-[650px]">

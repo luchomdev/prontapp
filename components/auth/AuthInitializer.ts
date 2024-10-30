@@ -31,7 +31,7 @@ export function AuthInitializer() {
     }
 
     initializeAuth();
-  }, []);
+  }, [setAuthenticated, setUser, setLoading]);
 
   return null;
 }

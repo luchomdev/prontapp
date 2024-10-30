@@ -1,6 +1,7 @@
 import React from 'react';
 import Image from 'next/image';
 import { FaTrash } from 'react-icons/fa';
+import { formatCurrency } from '@/lib/Helpers';
 
 interface MiniCartProductProps {
   stock_id: number;
@@ -29,7 +30,7 @@ const MiniCartProduct: React.FC<MiniCartProductProps> = ({ stock_id, item, onRem
     <div className="flex-grow">
       <p className="text-sm font-medium">{item.name}</p>
       <p className="text-xs text-gray-600">
-        {item.cantidad} x ${item.precio.toFixed(0)} = ${item.subtotal.toFixed(0)}
+        {item.cantidad} x {formatCurrency(Number(item.precio.toFixed(0)))} = {formatCurrency(Number(item.subtotal.toFixed(0)))}
       </p>
     </div>
     <button 

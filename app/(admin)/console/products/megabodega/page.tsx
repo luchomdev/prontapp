@@ -48,9 +48,22 @@ const MegaBodegaPage = () => {
     const [showToaster, setShowToaster] = useState(false);
     const [importingProducts, setImportingProducts] = useState<{ [key: string]: boolean }>({});
 
+    const pageRef = useRef(page);
+    const isLoadingRef = useRef(isLoading);
+
+    useEffect(() => {
+        pageRef.current = page;
+    }, [page]);
+
+    useEffect(() => {
+        isLoadingRef.current = isLoading;
+    }, [isLoading]);
+
     const fetchProducts = useCallback(async (loadMore = false) => {
+        if (isLoadingRef.current) return;
+
         setIsLoading(true);
-        const currentPage = loadMore ? page + 1 : 1;
+        const currentPage = loadMore ? pageRef.current + 1 : 1;
         try {
             const queryParams = new URLSearchParams({
                 page: currentPage.toString(),
@@ -67,12 +80,7 @@ const MegaBodegaPage = () => {
 
             const data = await response.json();
             
-            if (loadMore) {
-                setProducts(prevProducts => [...prevProducts, ...data.data]);
-            } else {
-                setProducts(data.data);
-            }
-
+            setProducts(prevProducts => loadMore ? [...prevProducts, ...data.data] : data.data);
             setPage(currentPage);
             setHasMore(currentPage < data.last_page);
         } catch (error) {
@@ -83,22 +91,23 @@ const MegaBodegaPage = () => {
         } finally {
             setIsLoading(false);
         }
-    }, [filterParams, page]);
+    }, [filterParams]);
 
     useEffect(() => {
         fetchProducts();
-    }, [filterParams]);
+    }, [fetchProducts]);
 
-    const handleFilterChange = (newFilterParams: FilterParams) => {
+    const handleFilterChange = useCallback((newFilterParams: FilterParams) => {
         setFilterParams(newFilterParams);
         setPage(1);
-    };
+        pageRef.current = 1;
+    }, []);
 
-    const handleLoadMore = () => {
-        if (!isLoading && hasMore) {
+    const handleLoadMore = useCallback(() => {
+        if (!isLoadingRef.current && hasMore) {
             fetchProducts(true);
         }
-    };
+    }, [hasMore, fetchProducts]);
 
     const handleImport = useCallback(async (product: MegaProduct) => {
         setImportingProducts(prev => ({ ...prev, [product.id]: true }));

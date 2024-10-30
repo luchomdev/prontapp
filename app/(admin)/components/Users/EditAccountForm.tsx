@@ -24,6 +24,15 @@ interface EditAccountFormProps {
   onSave: () => void;
 }
 
+
+const debounce = (func: Function, delay: number) => {
+  let timeoutId: NodeJS.Timeout;
+  return (...args: any[]) => {
+    clearTimeout(timeoutId);
+    timeoutId = setTimeout(() => func(...args), delay);
+  };
+};
+
 const EditAccountForm: React.FC<EditAccountFormProps> = ({ user, onClose, onSave }) => {
   const [formData, setFormData] = useState({
     name: user.name,
@@ -42,17 +51,9 @@ const EditAccountForm: React.FC<EditAccountFormProps> = ({ user, onClose, onSave
   const [cityResults, setCityResults] = useState<City[]>([]);
   const [showCityResults, setShowCityResults] = useState(false);
 
-  const debounce = (func: Function, delay: number) => {
-    let timeoutId: NodeJS.Timeout;
-    return (...args: any[]) => {
-      clearTimeout(timeoutId);
-      timeoutId = setTimeout(() => func(...args), delay);
-    };
-  };
-
-  const searchCities = useCallback(
-    debounce(async (term: string) => {
-      if (term.length < 3) return;
+  const searchCities = useCallback((term: string) => {
+    if (term.length < 3) return;
+    const fetchCities = async () => {
       try {
         const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/locations/search-cities?search=${term}`, {
           credentials: 'include',
@@ -65,9 +66,9 @@ const EditAccountForm: React.FC<EditAccountFormProps> = ({ user, onClose, onSave
       } catch (error) {
         console.error('Error searching cities:', error);
       }
-    }, 300),
-    []
-  );
+    };
+    debounce(fetchCities, 300)();
+  }, []);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;

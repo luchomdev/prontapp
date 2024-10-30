@@ -20,13 +20,22 @@ interface UserForEdit {
 interface City {
     city_id: number;
     name: string;
-  }
+}
 
 interface EditUserFormProps {
   user: UserForEdit;
   onClose: () => void;
   showToasterMessage: (message: string, type: 'success' | 'error') => void;
 }
+
+// Movemos la función debounce fuera del componente
+const debounce = (func: Function, delay: number) => {
+  let timeoutId: NodeJS.Timeout;
+  return (...args: any[]) => {
+    clearTimeout(timeoutId);
+    timeoutId = setTimeout(() => func(...args), delay);
+  };
+};
 
 const EditUserForm: React.FC<EditUserFormProps> = ({ user, onClose, showToasterMessage }) => {
     const [formData, setFormData] = useState({
@@ -38,95 +47,85 @@ const EditUserForm: React.FC<EditUserFormProps> = ({ user, onClose, showToasterM
         address: user.customerInfo.address || '',
         city_id: user.customerInfo.cityId || '',
         cityText: user.customerInfo.cityText || '',
-      });
+    });
     
-      const [isLoading, setIsLoading] = useState(false);
-      const [isFormValid, setIsFormValid] = useState(true);
-      const [citySearchTerm, setCitySearchTerm] = useState('');
-      const [cityResults, setCityResults] = useState<City[]>([]);
-      const [showCityResults, setShowCityResults] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
+    const [isFormValid, setIsFormValid] = useState(true);
+    const [citySearchTerm, setCitySearchTerm] = useState('');
+    const [cityResults, setCityResults] = useState<City[]>([]);
+    const [showCityResults, setShowCityResults] = useState(false);
 
-  useEffect(() => {
-    
-    const { name, lastName, email } = formData;
-    setIsFormValid(name.trim() !== '' && lastName.trim() !== '' && email.trim() !== '');
-  }, [formData]);
+    useEffect(() => {
+        const { name, lastName, email } = formData;
+        setIsFormValid(name.trim() !== '' && lastName.trim() !== '' && email.trim() !== '');
+    }, [formData]);
 
-  const debounce = (func: Function, delay: number) => {
-    let timeoutId: NodeJS.Timeout;
-    return (...args: any[]) => {
-      clearTimeout(timeoutId);
-      timeoutId = setTimeout(() => func(...args), delay);
-    };
-  };
+    const searchCities = useCallback((term: string) => {
+        if (term.length < 3) return;
+        const fetchCities = async () => {
+            try {
+                const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/locations/search-cities?search=${term}`, {
+                    credentials: 'include',
+                });
+                if (response.ok) {
+                    const cities = await response.json();
+                    setCityResults(cities);
+                    setShowCityResults(true);
+                }
+            } catch (error) {
+                console.error('Error searching cities:', error);
+            }
+        };
+        debounce(fetchCities, 300)();
+    }, []);
 
-  const searchCities = useCallback(
-    debounce(async (term: string) => {
-      if (term.length < 3) return;
-      try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/locations/search-cities?search=${term}`, {
-          credentials: 'include',
-        });
-        if (response.ok) {
-          const cities = await response.json();
-          setCityResults(cities);
-          setShowCityResults(true);
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const { name, value } = e.target;
+        setFormData(prev => ({ ...prev, [name]: value }));
+        if (name === 'cityText') {
+            setCitySearchTerm(value);
+            searchCities(value);
         }
-      } catch (error) {
-        console.error('Error searching cities:', error);
-      }
-    }, 300),
-    []
-  );
+    };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-    if (name === 'cityText') {
-      setCitySearchTerm(value);
-      searchCities(value);
-    }
-  };
+    const handleCitySelect = (city: City) => {
+        setFormData(prev => ({
+            ...prev,
+            city_id: city.city_id,
+            cityText: city.name,
+        }));
+        setShowCityResults(false);
+    };
 
-  const handleCitySelect = (city: City) => {
-    setFormData(prev => ({
-      ...prev,
-      city_id: city.city_id,
-      cityText: city.name,
-    }));
-    setShowCityResults(false);
-  };
-
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setIsLoading(true);
-    try {
-      
-      const { cityText, ...dataToSend } = formData;
-  
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users/${user.id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(dataToSend), 
-        credentials: 'include',
-      });
-      
-      if (response.ok) {
-        showToasterMessage('Usuario actualizado exitosamente', 'success');
-        onClose();
-      } else {
-        const errorData = await response.json();
-        showToasterMessage(errorData.message || 'Error al actualizar el usuario', 'error');
-      }
-    } catch (error) {
-      console.error('Error updating user:', error);
-      showToasterMessage('Error al conectar con el servidor', 'error');
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
+        setIsLoading(true);
+        try {
+            const { cityText, ...dataToSend } = formData;
+    
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users/${user.id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(dataToSend), 
+                credentials: 'include',
+            });
+            
+            if (response.ok) {
+                showToasterMessage('Usuario actualizado exitosamente', 'success');
+                onClose();
+            } else {
+                const errorData = await response.json();
+                showToasterMessage(errorData.message || 'Error al actualizar el usuario', 'error');
+            }
+        } catch (error) {
+            console.error('Error updating user:', error);
+            showToasterMessage('Error al conectar con el servidor', 'error');
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
   return (
     <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full">

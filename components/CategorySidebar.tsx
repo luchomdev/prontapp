@@ -72,6 +72,8 @@ const CategorySidebar: React.FC<CategorySidebarProps> = ({ isOpen, onClose, cate
       setCurrentLevel(category.children);
     } else if (category.level === 2 || category.level === 3) {
       onCategoryClick(category);
+    }else{
+      onCategoryClick(category);
     }
   };
 

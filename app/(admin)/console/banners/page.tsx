@@ -1,5 +1,5 @@
 "use client"
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { FaPlus } from 'react-icons/fa';
 import BannerCard from '@/app/(admin)/components/banners/BannerCard';
@@ -26,28 +26,48 @@ const BannersAdminPage = () => {
   const [showToaster, setShowToaster] = useState(false);
   const [updateTrigger, setUpdateTrigger] = useState(0);
   const router = useRouter();
+  const pageRef = useRef(page);
+  const isLoadingRef = useRef(isLoading);
+
+  useEffect(() => {
+    pageRef.current = page;
+  }, [page]);
+
+  useEffect(() => {
+    isLoadingRef.current = isLoading;
+  }, [isLoading]);
+
+  const showToasterMessage = useCallback((message: string, type: 'success' | 'error') => {
+    setToasterMessage(message);
+    setToasterType(type);
+    setShowToaster(true);
+  }, []);
 
   const fetchBanners = useCallback(async (loadMore = false) => {
+    if (isLoadingRef.current) return;
     setIsLoading(true);
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/banners/admin?page=${loadMore ? page + 1 : 1}`, {
-        credentials: 'include'
+      const currentPage = loadMore ? pageRef.current + 1 : 1;
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/banners/admin?page=${currentPage}`, {
+        credentials: 'include',
+        cache: 'no-store'
       });
       const data = await response.json();
       if (loadMore) {
         setBanners(prevBanners => [...prevBanners, ...data.banners]);
-        setPage(prevPage => prevPage + 1);
+        setPage(currentPage);
       } else {
         setBanners(data.banners);
+        setPage(1);
       }
-      setHasMore(data.currentPage < data.totalPages);
+      setHasMore(currentPage < data.totalPages);
     } catch (error) {
       console.error('Error fetching banners:', error);
       showToasterMessage('Error al cargar los banners', 'error');
     } finally {
       setIsLoading(false);
     }
-  }, [page]);
+  }, [showToasterMessage]);
 
   useEffect(() => {
     fetchBanners();
@@ -76,7 +96,7 @@ const BannersAdminPage = () => {
           )
         );
         showToasterMessage(`Banner ${updatedBanner.is_active ? 'activado' : 'desactivado'} exitosamente`, 'success');
-        setUpdateTrigger(prev => prev + 1); // Forzar re-renderizado
+        setUpdateTrigger(prev => prev + 1); // Forzar una actualización
       } else {
         const errorData = await response.json();
         showToasterMessage(errorData.message || 'Error al cambiar el estado del banner', 'error');
@@ -87,21 +107,23 @@ const BannersAdminPage = () => {
     }
   };
 
-  const showToasterMessage = (message: string, type: 'success' | 'error') => {
-    setToasterMessage(message);
-    setToasterType(type);
-    setShowToaster(true);
-  };
+  const handleLoadMore = useCallback(() => {
+    if (!isLoadingRef.current && hasMore) {
+      fetchBanners(true);
+    }
+  }, [hasMore, fetchBanners]);
 
   return (
-    <div className="p-6">
-      {showToaster && (
-        <Toaster
-          message={toasterMessage}
-          type={toasterType}
-          onClose={() => setShowToaster(false)}
-        />
-      )}
+    <div className="p-6 relative">
+      <div className="fixed top-4 right-4 z-50">
+        {showToaster && (
+          <Toaster
+            message={toasterMessage}
+            type={toasterType}
+            onClose={() => setShowToaster(false)}
+          />
+        )}
+      </div>
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-sm font-bold">Administrar banners encabezados</h1>
         <button
@@ -121,7 +143,7 @@ const BannersAdminPage = () => {
           />
         ))}
       </div>
-      <LoadMoreData onLoadMore={() => fetchBanners(true)} isLoading={isLoading} hasMore={hasMore} />
+      <LoadMoreData onLoadMore={handleLoadMore} isLoading={isLoading} hasMore={hasMore} />
     </div>
   );
 };

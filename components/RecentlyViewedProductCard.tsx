@@ -1,6 +1,7 @@
 import React from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { formatCurrency } from '@/lib/Helpers';
 
 interface RecentlyViewedProductCardProps {
   id: string;
@@ -27,7 +28,7 @@ const RecentlyViewedProductCard: React.FC<RecentlyViewedProductCardProps> = ({ i
       <h3 className="text-sm font-medium text-gray-800 mb-1 line-clamp-2 text-center w-full">
         {name}
       </h3>
-      <p className="text-sm font-bold text-gray-900">${price.toFixed(0)}</p>
+      <p className="text-sm font-bold text-gray-900">{formatCurrency(price)}</p>
     </div>
   );
 };

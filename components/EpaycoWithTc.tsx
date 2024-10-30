@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+"use client"
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { FaCreditCard, FaChevronDown, FaChevronUp, FaPlus } from 'react-icons/fa';
 import { useRouter } from 'next/navigation';
 import PaySecureText from '@/components/SecurePaymentText';
@@ -43,6 +44,8 @@ const EpaycoWithTc: React.FC<EpaycoWithTcProps> = ({ isActive, onToggle, epaycoT
     const [savedCards, setSavedCards] = useState<SavedCard[]>([]);
     const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(false);
+    const [isLoadingQuote, setIsLoadingQuote] = useState(false);
+    const [isLoadingOrder, setIsLoadingOrder] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
     const [cardNumber, setCardNumber] = useState('');
@@ -50,6 +53,8 @@ const EpaycoWithTc: React.FC<EpaycoWithTcProps> = ({ isActive, onToggle, epaycoT
     const [cardExpMonth, setCardExpMonth] = useState('');
     const [cardCvc, setCardCvc] = useState('');
     const [dues, setDues] = useState('1');
+
+    const hasRunEffect = useRef(false);
 
     const {
         setPayment,
@@ -61,7 +66,8 @@ const EpaycoWithTc: React.FC<EpaycoWithTcProps> = ({ isActive, onToggle, epaycoT
         tmp_order_id,
         setTmpOrderId,
         customerInfo,
-        totalCartValue
+        totalCartValue,
+        shippingQuote
     } = useStore(state => ({
         setPayment: state.setPayment,
         shippingAddress: state.shippingAddress,
@@ -72,24 +78,18 @@ const EpaycoWithTc: React.FC<EpaycoWithTcProps> = ({ isActive, onToggle, epaycoT
         tmp_order_id: state.tmp_order_id,
         setTmpOrderId: state.setTmpOrderId,
         customerInfo: state.customerInfo,
-        totalCartValue: state.totalCartValue
+        totalCartValue: state.totalCartValue,
+        shippingQuote: state.shippingQuote
     }));
 
     const currentYear = new Date().getFullYear();
     const years = Array.from({ length: 10 }, (_, i) => (currentYear + i).toString());
     const months = Array.from({ length: 12 }, (_, i) => String(i + 1).padStart(2, '0'));
 
-    useEffect(() => {
-        if (isActive) {
-            fetchShippingQuote().then(createOrUpdateTmpOrder);
-            loadSavedCards();
-        }
-    }, [isActive]);
-
-    const fetchShippingQuote = async () => {
+    const fetchShippingQuote = useCallback(async () => {
         if (!shippingAddress) return;
 
-        setIsLoading(true);
+        setIsLoadingQuote(true);
         const stock_ids = Object.keys(cart).map(Number);
         try {
             const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/shipping/quote`, {
@@ -110,29 +110,30 @@ const EpaycoWithTc: React.FC<EpaycoWithTcProps> = ({ isActive, onToggle, epaycoT
             console.error('Error fetching shipping quote:', error);
             setError('Error al calcular el costo de envío');
         } finally {
-            setIsLoading(false);
+            setIsLoadingQuote(false);
         }
-    };
+    }, [shippingAddress, cart, setShippingQuote, setTotalShippingCost]);
 
-    const createOrUpdateTmpOrder = async () => {
-        setIsLoading(true);
+    const createOrUpdateTmpOrder = useCallback(async () => {
+        setIsLoadingOrder(true);
         try {
+            const currentState = useStore.getState();
             const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/orders/tmp-order`, {
                 method: 'POST',
                 credentials: 'include',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    cart_content: cart,
-                    shipping_quote: await useStore.getState().shippingQuote,
-                    shipping_address: shippingAddress,
-                    subtotals_value: subtotalsValue,
-                    total_cart_value: await useStore.getState().totalCartValue,
-                    total_shipping_cost: await useStore.getState().totalShippingCost,
-                    customer: customerInfo,
+                    cart_content: currentState.cart,
+                    shipping_quote: currentState.shippingQuote,
+                    shipping_address: currentState.shippingAddress,
+                    subtotals_value: currentState.subtotalsValue,
+                    total_cart_value: currentState.totalCartValue,
+                    total_shipping_cost: currentState.totalShippingCost,
+                    customer: currentState.customerInfo,
                     payment: "1",
                     auth_user_id: user.id,
                     auth_user_email: user.email,
-                    order_tmp_id: tmp_order_id
+                    order_tmp_id: currentState.tmp_order_id
                 }),
             });
 
@@ -144,11 +145,11 @@ const EpaycoWithTc: React.FC<EpaycoWithTcProps> = ({ isActive, onToggle, epaycoT
             console.error('Error creating or updating temporary order:', error);
             setError('Error al actualizar la orden temporal');
         } finally {
-            setIsLoading(false);
+            setIsLoadingOrder(false);
         }
-    };
+    }, [user, setTmpOrderId]);
 
-    const loadSavedCards = async () => {
+    const loadSavedCards = useCallback(async () => {
         try {
             const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/epayco/saved-tcs?user_id=${user.id}&email=${user.email}`, {
                 method: 'GET',
@@ -165,12 +166,28 @@ const EpaycoWithTc: React.FC<EpaycoWithTcProps> = ({ isActive, onToggle, epaycoT
             console.error('Error loading saved cards:', error);
             setError('Error al cargar las tarjetas guardadas');
         }
-    };
+    }, [user.id, user.email]);
+
+    useEffect(() => {
+        if (isActive && !hasRunEffect.current) {
+            hasRunEffect.current = true;
+            fetchShippingQuote();
+        }
+    }, [isActive, fetchShippingQuote]);
+
+    useEffect(() => {
+        if (isActive && shippingQuote.length > 0) {
+            createOrUpdateTmpOrder().then(() => {
+                loadSavedCards();
+            });
+        }
+    }, [isActive, shippingQuote, createOrUpdateTmpOrder, loadSavedCards]);
 
     const handleToggle = () => {
         onToggle();
         if (!isActive) {
             setPayment(1);
+            hasRunEffect.current = false; // Reset the flag when toggling
         }
     };
 
@@ -348,14 +365,14 @@ const EpaycoWithTc: React.FC<EpaycoWithTcProps> = ({ isActive, onToggle, epaycoT
                     )}
                     <button
                         onClick={handlePayment}
-                        disabled={!isFormValid() || isLoading}
+                        disabled={!isFormValid() || isLoading || isLoadingQuote || isLoadingOrder}
                         className="mt-4 bg-orange-500 text-white font-bold py-2 px-4 rounded hover:bg-orange-600 transition duration-300 w-full disabled:bg-gray-300 disabled:cursor-not-allowed"
                     >
                         Pagar
                     </button>
                 </div>
             )}
-            {isLoading && <SkeletonLoadingModal />}
+            {(isLoading || isLoadingQuote || isLoadingOrder) && <SkeletonLoadingModal />}
             {error && (
                 <Toaster
                     message={error}

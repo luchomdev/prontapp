@@ -7,7 +7,7 @@ interface LoadMoreDataProps {
   hasMore: boolean;
 }
 
-const LoadMoreData: React.FC<LoadMoreDataProps> = ({ onLoadMore, isLoading, hasMore }) => {
+const LoadMoreData: React.FC<LoadMoreDataProps> = React.memo(({ onLoadMore, isLoading, hasMore }) => {
   if (!hasMore) return null;
 
   return (
@@ -28,6 +28,8 @@ const LoadMoreData: React.FC<LoadMoreDataProps> = ({ onLoadMore, isLoading, hasM
       </button>
     </div>
   );
-};
+});
+
+LoadMoreData.displayName = 'LoadMoreData';
 
 export default LoadMoreData;

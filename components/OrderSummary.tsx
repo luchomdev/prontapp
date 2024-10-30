@@ -2,6 +2,7 @@ import React from 'react';
 import { FaUser, FaEnvelope, FaPhone, FaIdCard } from 'react-icons/fa';
 import { useStore } from '@/stores/cartStore';
 import SkeletonOrderSummary from './skeletons/SkeletonOrderSummary';
+import { formatCurrency } from '@/lib/Helpers';
 
 interface OrderSummaryProps {
   customerInfo: {
@@ -56,15 +57,15 @@ const OrderSummary: React.FC = () => {
       <div className="border-t pt-4">
         <div className="flex justify-between mb-2">
           <span>Subtotal</span>
-          <span>${subtotalsValue.toFixed(0)}</span>
+          <span>{formatCurrency(subtotalsValue)}</span>
         </div>
         <div className="flex justify-between mb-2">
           <span>Costo de envío</span>
-          <span>${totalShippingCost.toFixed(0)}</span>
+          <span>{formatCurrency(totalShippingCost)}</span>
         </div>
         <div className="flex justify-between font-bold text-lg mt-4">
           <span>Total</span>
-          <span className="text-orange-500">${totalCartValue.toFixed(0)}</span>
+          <span className="text-orange-500">{formatCurrency(totalCartValue)}</span>
         </div>
       </div>
     </div>

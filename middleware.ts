@@ -60,7 +60,10 @@ export async function middleware(request: NextRequest) {
   }
 
   // Redirigir a signin si intenta acceder a rutas protegidas sin token
-  if (isNormalUserProtectedRoute(path) || isAdminProtectedRoute(path)) {
+  if (isNormalUserProtectedRoute(path)) {
+    return NextResponse.redirect(new URL('/signin', request.url))
+  }
+  if (isAdminProtectedRoute(path)) {
     return NextResponse.redirect(new URL('/auth/signin', request.url))
   }
 

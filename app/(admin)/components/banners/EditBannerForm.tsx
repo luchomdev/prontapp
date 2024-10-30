@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 
 interface EditBannerFormProps {
@@ -6,22 +6,18 @@ interface EditBannerFormProps {
 }
 
 const EditBannerForm: React.FC<EditBannerFormProps> = ({ bannerId }) => {
-    const [formData, setFormData] = useState({
-        title: '',
-        link: '',
-        orderIndex: 0,
-        isActive: true,
-        platform: 'web',
-        image: null as File | null,
-      });
-      const [isLoading, setIsLoading] = useState(false);
-      const router = useRouter();
+  const [formData, setFormData] = useState({
+    title: '',
+    link: '',
+    orderIndex: 0,
+    isActive: true,
+    platform: 'web',
+    image: null as File | null,
+  });
+  const [isLoading, setIsLoading] = useState(false);
+  const router = useRouter();
 
-      useEffect(() => {
-        fetchBannerData();
-      }, [bannerId]);
-
-  const fetchBannerData = async () => {
+  const fetchBannerData = useCallback(async () => {
     try {
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/banners/admin/${bannerId}`, {
         credentials: 'include',
@@ -42,7 +38,11 @@ const EditBannerForm: React.FC<EditBannerFormProps> = ({ bannerId }) => {
     } catch (error) {
       console.error('Error fetching banner data:', error);
     }
-  };
+  }, [bannerId]);
+
+  useEffect(() => {
+    fetchBannerData();
+  }, [fetchBannerData]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
@@ -93,7 +93,7 @@ const EditBannerForm: React.FC<EditBannerFormProps> = ({ bannerId }) => {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-        {/* <div>{JSON.stringify(formData)}</div> */}
+      {/* <div>{JSON.stringify(formData)}</div> */}
       <div>
         <label htmlFor="title" className="block text-sm font-medium text-gray-700">Título</label>
         <input

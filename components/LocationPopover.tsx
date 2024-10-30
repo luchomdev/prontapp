@@ -2,16 +2,16 @@ import React, { useState, useEffect, useRef } from 'react';
 import { FaTimes } from 'react-icons/fa';
 import { useStore } from '@/stores/cartStore';
 import { useRouter } from 'next/navigation';
+import { useFloating, offset, flip, shift, arrow, Placement } from '@floating-ui/react';
 
 interface PopoverProps {
   anchorEl: HTMLElement | null;
 }
 
 const LocationPopover: React.FC<PopoverProps> = ({ anchorEl }) => {
-  const [popoverStyle, setPopoverStyle] = useState({});
-  const [arrowStyle, setArrowStyle] = useState({});
-  const popoverRef = useRef<HTMLDivElement>(null);
+  const [isVisible, setIsVisible] = useState(false);
   const router = useRouter();
+  const arrowRef = useRef(null);
   
   const { 
     isLocationModalOpen, 
@@ -27,35 +27,28 @@ const LocationPopover: React.FC<PopoverProps> = ({ anchorEl }) => {
     isAuthenticated: state.isAuthenticated
   }));
 
+  const { x, y, strategy, placement, middlewareData, refs } = useFloating({
+    placement: 'top', // Cambiado a 'top'
+    middleware: [
+      offset(10),
+      flip(),
+      shift({ padding: 5 }),
+      arrow({ element: arrowRef })
+    ],
+  });
+
+  const staticSide = placement ? ['top', 'right', 'bottom', 'left'].find(
+    side => placement.split('-')[0] === side
+  ) : 'top'; // Cambiado a 'top'
+
   useEffect(() => {
-    if (isLocationModalOpen && anchorEl && popoverRef.current) {
-      const anchorRect = anchorEl.getBoundingClientRect();
-      const popoverRect = popoverRef.current.getBoundingClientRect();
-      const viewportWidth = window.innerWidth;
-
-      let left = anchorRect.left + window.scrollX - popoverRect.width / 2 + anchorRect.width / 2;
-      let arrowLeft = '50%';
-
-      // Ajuste para evitar que el popover se salga de la pantalla
-      if (left < 10) {
-        arrowLeft = `${anchorRect.left + anchorRect.width / 2 - left - 10}px`;
-        left = 10;
-      } else if (left + popoverRect.width > viewportWidth - 10) {
-        left = viewportWidth - popoverRect.width - 10;
-        arrowLeft = `${anchorRect.left + anchorRect.width / 2 - left - 10}px`;
-      }
-
-      setPopoverStyle({
-        position: 'absolute',
-        top: `${anchorRect.bottom + window.scrollY + 10}px`, // 10px para el espacio de la flecha
-        left: `${left}px`,
-      });
-
-      setArrowStyle({
-        left: arrowLeft,
-      });
+    if (isLocationModalOpen && anchorEl) {
+      refs.setReference(anchorEl);
+      setIsVisible(true);
+    } else {
+      setIsVisible(false);
     }
-  }, [isLocationModalOpen, anchorEl]);
+  }, [isLocationModalOpen, anchorEl, refs]);
 
   const handleButtonClick = () => {
     if (isAuthenticated) {
@@ -66,7 +59,15 @@ const LocationPopover: React.FC<PopoverProps> = ({ anchorEl }) => {
     }
   };
 
-  if (!isLocationModalOpen) return null;
+  if (!isVisible) return null;
+
+  const arrowStyle: React.CSSProperties = {
+    left: middlewareData.arrow?.x != null ? `${middlewareData.arrow.x}px` : '',
+    top: middlewareData.arrow?.y != null ? `${middlewareData.arrow.y}px` : '',
+    right: '',
+    bottom: '',
+    ...(staticSide ? { [staticSide]: '-4px' } : {}),
+  };
 
   return (
     <>
@@ -75,14 +76,24 @@ const LocationPopover: React.FC<PopoverProps> = ({ anchorEl }) => {
         onClick={closeLocationModal}
       ></div>
       <div
-        ref={popoverRef}
-        className="bg-white shadow-lg rounded-lg p-4 w-64 z-50 relative"
-        style={popoverStyle as React.CSSProperties}
+        ref={refs.setFloating}
+        style={{
+          position: strategy,
+          top: y ?? 0,
+          left: x ?? 0,
+          width: 'calc(100% - 20px)',
+          maxWidth: '300px',
+        }}
+        className="bg-white shadow-lg rounded-lg p-4 z-50"
       >
-        <div
-          className="absolute w-4 h-4 bg-white transform rotate-45 -top-2"
-          style={arrowStyle as React.CSSProperties}
-        ></div>
+        <div 
+          ref={arrowRef}
+          className="absolute w-2 h-2 bg-white rotate-45 transform"
+          style={{
+            ...arrowStyle,
+            [staticSide === 'top' ? 'bottom' : 'top']: '-4px', // Ajustado para que la flecha apunte hacia arriba
+          }}
+        />
         <div className="relative">
           <div className="flex justify-between items-center mb-2">
             <h3 className="font-semibold">

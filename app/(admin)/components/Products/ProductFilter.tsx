@@ -32,11 +32,7 @@ const ProductFilter: React.FC<ProductFilterProps> = ({ onFilterChange }) => {
         }, 3000);
     }, [router]);
 
-    useEffect(() => {
-        fetchAllCategories();
-    }, []);
-
-    const fetchAllCategories = async () => {
+    const fetchAllCategories = useCallback(async () => {
         try {
             const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/categories/admin?limit=1000`, {
                 credentials: 'include',
@@ -54,7 +50,11 @@ const ProductFilter: React.FC<ProductFilterProps> = ({ onFilterChange }) => {
         } catch (error) {
             console.error('Error fetching all categories:', error);
         }
-    };
+    }, [handleSessionExpired]);
+
+    useEffect(() => {
+        fetchAllCategories();
+    }, [fetchAllCategories]);
 
     const handleApplyFilter = useCallback(() => {
         const filterParams: FilterParams = {
@@ -76,7 +76,7 @@ const ProductFilter: React.FC<ProductFilterProps> = ({ onFilterChange }) => {
         });
     }, [onFilterChange]);
 
-    const renderCategoryOptions = (categories: Category[], parentId: string | null = null, level = 0): JSX.Element[] => {
+    const renderCategoryOptions = useCallback((categories: Category[], parentId: string | null = null, level = 0): JSX.Element[] => {
         return categories
             .filter(cat => cat.parent_id === parentId)
             .flatMap(cat => [
@@ -85,7 +85,7 @@ const ProductFilter: React.FC<ProductFilterProps> = ({ onFilterChange }) => {
                 </option>,
                 ...renderCategoryOptions(categories, cat.id, level + 1)
             ]);
-    };
+    }, []);
 
     return (
         <div className="bg-white p-4 rounded-lg shadow-md mb-4">

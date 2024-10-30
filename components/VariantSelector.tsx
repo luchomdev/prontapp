@@ -12,7 +12,7 @@ interface VariantSelectorProps {
 const VariantSelector: React.FC<VariantSelectorProps> = ({ variants, selectedVariant, onSelect }) => {
   return (
     <div className="mb-6">
-      <h3 className="text-lg font-semibold mb-2">Opciones</h3>
+      <h3 className="text-lg font-semibold mb-2">Opciones: {selectedVariant.name}</h3>
       <div className="flex space-x-2 overflow-x-auto">
         {variants.map((variant) => {
           const images = parseProductImages(variant.images);

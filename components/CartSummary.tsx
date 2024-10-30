@@ -2,6 +2,7 @@
 
 import { useStore } from '@/stores/cartStore';
 import { useRouter } from 'next/navigation';
+import { formatCurrency } from '@/lib/Helpers';
 
 interface CartSummaryProps {
   isAuthenticated: boolean;
@@ -29,7 +30,7 @@ const CartSummary: React.FC<CartSummaryProps> = ({ isAuthenticated, hasShippingA
     <div className="bg-white p-6 rounded-lg shadow">
       <h2 className="text-2xl font-bold mb-4">Resumen del Carrito</h2>
       <div className="mb-4">
-        <p className="font-semibold">Subtotal en productos: ${subtotalsValue.toFixed(0)}</p>
+        <p className="font-semibold">Subtotal en productos: {formatCurrency(subtotalsValue)}</p>
         <p className="text-sm text-gray-600">Cantidad de items: {totalItems}</p>
       </div>
       <div className="mb-4">

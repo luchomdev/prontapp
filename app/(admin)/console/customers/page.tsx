@@ -1,6 +1,6 @@
 "use client"
-import React, { useState, useEffect } from 'react';
-import { FaPlus } from 'react-icons/fa';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { FaPlus, FaSearch } from 'react-icons/fa';
 import UserCard from '@/app/(admin)/components/Users/UserCard';
 import CreateUserForm from '@/app/(admin)/components/Users/CreateUserForm';
 import EditUserForm from '@/app/(admin)/components/Users/EditUserForm';
@@ -15,6 +15,7 @@ interface UserListItem {
     user_role: string;
     is_active: boolean;
 }
+
 interface CustomerInfo {
     identification: string | null;
     phone: string | null;
@@ -22,6 +23,7 @@ interface CustomerInfo {
     cityId: number | null,
     cityText: string | null;
 }
+
 interface UserForEdit {
     id: string;
     name: string;
@@ -31,7 +33,6 @@ interface UserForEdit {
     isActive: boolean;
     customerInfo: CustomerInfo
 }
-
 
 const UsersAdminPage = () => {
     const [users, setUsers] = useState<UserListItem[]>([]);
@@ -43,23 +44,37 @@ const UsersAdminPage = () => {
     const [toasterMessage, setToasterMessage] = useState('');
     const [toasterType, setToasterType] = useState<'success' | 'error'>('success');
     const [showToaster, setShowToaster] = useState(false);
+    const [searchTerm, setSearchTerm] = useState('');
+    const pageRef = useRef(page);
 
     useEffect(() => {
-        fetchUsers();
+        pageRef.current = page;
+    }, [page]);
+
+    const showToasterMessage = useCallback((message: string, type: 'success' | 'error') => {
+        setToasterMessage(message);
+        setToasterType(type);
+        setShowToaster(true);
     }, []);
 
-    const fetchUsers = async (loadMore = false) => {
+    const fetchUsers = useCallback(async (loadMore = false, search = '') => {
         setIsLoading(true);
+        const currentPage = loadMore ? pageRef.current + 1 : 1;
         try {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users?page=${loadMore ? page + 1 : 1}`, {
+            const queryParams = new URLSearchParams({
+                page: currentPage.toString(),
+                ...(search && { search })
+            });
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users?${queryParams}`, {
                 credentials: 'include'
             });
             const data = await response.json();
             if (loadMore) {
                 setUsers(prevUsers => [...prevUsers, ...data.users]);
-                setPage(prevPage => prevPage + 1);
+                setPage(currentPage);
             } else {
                 setUsers(data.users);
+                setPage(1);
             }
             setHasMore(data.users.length === data.limit);
         } catch (error) {
@@ -68,14 +83,17 @@ const UsersAdminPage = () => {
         } finally {
             setIsLoading(false);
         }
-    };
+    }, [showToasterMessage]);
+
+    useEffect(() => {
+        fetchUsers(false, searchTerm);
+    }, [fetchUsers, searchTerm]);
 
     const handleCreateUser = () => {
         setShowCreateForm(true);
     };
 
     const handleEditUser = (user: UserListItem) => {
-        // Aquí necesitamos hacer una llamada adicional para obtener los detalles completos del usuario
         fetchUserDetails(user.id);
     };
 
@@ -96,15 +114,14 @@ const UsersAdminPage = () => {
         }
     };
 
-
     const handleCloseForm = () => {
         setShowCreateForm(false);
         setEditingUser(null);
-        fetchUsers();
+        fetchUsers(false, searchTerm);
     };
 
     const handleLoadMore = () => {
-        fetchUsers(true);
+        fetchUsers(true, searchTerm);
     };
 
     const handleToggleActive = async (userId: string, currentStatus: boolean) => {
@@ -128,10 +145,13 @@ const UsersAdminPage = () => {
         }
     };
 
-    const showToasterMessage = (message: string, type: 'success' | 'error') => {
-        setToasterMessage(message);
-        setToasterType(type);
-        setShowToaster(true);
+    const handleSearch = () => {
+        fetchUsers(false, searchTerm);
+    };
+
+    const handleResetSearch = () => {
+        setSearchTerm('');
+        fetchUsers(false, '');
     };
 
     return (
@@ -150,6 +170,27 @@ const UsersAdminPage = () => {
                     className="text-sm bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-2 rounded flex items-center"
                 >
                     <FaPlus size={20} className="mr-2" /> Agregar usuario
+                </button>
+            </div>
+            <div className="mb-4 flex items-center">
+                <input
+                    type="text"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    placeholder="Buscar usuarios..."
+                    className="border p-2 mr-2 rounded"
+                />
+                <button
+                    onClick={handleSearch}
+                    className="bg-blue-500 text-white p-2 rounded mr-2"
+                >
+                    <FaSearch />
+                </button>
+                <button
+                    onClick={handleResetSearch}
+                    className="bg-gray-300 text-gray-700 p-2 rounded"
+                >
+                    Resetear
                 </button>
             </div>
             <div className="space-y-4">

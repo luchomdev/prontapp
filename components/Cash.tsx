@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+"use client"
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { FaMoneyBillWave, FaChevronDown, FaChevronUp } from 'react-icons/fa';
 import { useStore } from '@/stores/cartStore';
@@ -31,6 +32,7 @@ const Cash: React.FC<CashProps> = ({ isActive, onToggle, user }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingQuote, setIsLoadingQuote] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const hasRunEffect = useRef(false);
 
   const {
     setPayment,
@@ -42,7 +44,8 @@ const Cash: React.FC<CashProps> = ({ isActive, onToggle, user }) => {
     tmp_order_id,
     setTmpOrderId,
     customerInfo,
-    totalCartValue
+    totalCartValue,
+    shippingQuote,
   } = useStore(state => ({
     setPayment: state.setPayment,
     shippingAddress: state.shippingAddress,
@@ -53,17 +56,19 @@ const Cash: React.FC<CashProps> = ({ isActive, onToggle, user }) => {
     tmp_order_id: state.tmp_order_id,
     setTmpOrderId: state.setTmpOrderId,
     customerInfo: state.customerInfo,
-    totalCartValue:state.totalCartValue
+    totalCartValue: state.totalCartValue,
+    shippingQuote: state.shippingQuote,
   }));
 
   const handleToggle = () => {
     onToggle();
     if (!isActive) {
       setPayment(0);
+      hasRunEffect.current = false; // Reset the flag when toggling
     }
   };
 
-  const fetchShippingQuote = async () => {
+  const fetchShippingQuote = useCallback(async () => {
     if (!shippingAddress) return;
 
     setIsLoadingQuote(true);
@@ -89,27 +94,28 @@ const Cash: React.FC<CashProps> = ({ isActive, onToggle, user }) => {
     } finally {
       setIsLoadingQuote(false);
     }
-  };
+  }, [shippingAddress, cart, setShippingQuote, setTotalShippingCost]);
 
-  const createOrUpdateTmpOrder = async () => {
+  const createOrUpdateTmpOrder = useCallback(async () => {
     setIsLoading(true);
     try {
+      const currentState = useStore.getState(); // Get the most recent state
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/orders/tmp-order`, {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          cart_content: cart,
-          shipping_quote: await useStore.getState().shippingQuote,
-          shipping_address: shippingAddress,
-          subtotals_value: subtotalsValue,
-          total_cart_value: await useStore.getState().totalCartValue,
-          total_shipping_cost: await useStore.getState().totalShippingCost,
-          customer: customerInfo,
+          cart_content: currentState.cart,
+          shipping_quote: currentState.shippingQuote,
+          shipping_address: currentState.shippingAddress,
+          subtotals_value: currentState.subtotalsValue,
+          total_cart_value: currentState.totalCartValue,
+          total_shipping_cost: currentState.totalShippingCost,
+          customer: currentState.customerInfo,
           payment: "0",
           auth_user_id: user.id,
           auth_user_email: user.email,
-          order_tmp_id: tmp_order_id
+          order_tmp_id: currentState.tmp_order_id
         }),
       });
 
@@ -123,13 +129,20 @@ const Cash: React.FC<CashProps> = ({ isActive, onToggle, user }) => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [user, setTmpOrderId]);
 
   useEffect(() => {
-    if (isActive) {
-      fetchShippingQuote().then(createOrUpdateTmpOrder);
+    if (isActive && !hasRunEffect.current) {
+      hasRunEffect.current = true;
+      fetchShippingQuote();
     }
-  }, [isActive]);
+  }, [isActive, fetchShippingQuote]);
+
+  useEffect(() => {
+    if (isActive && shippingQuote.length > 0) {
+      createOrUpdateTmpOrder();
+    }
+  }, [isActive, shippingQuote, createOrUpdateTmpOrder]);
 
   const handleCreateOrder = async () => {
     setIsLoading(true);

@@ -30,7 +30,7 @@ const ModalSetAddress: React.FC = () => {
         setShippingAddress: state.setShippingAddress
     }));
 
-    console.log('ModalSetAddress rendering, isOpen:', isSetAddressModalOpen);
+    //console.log('ModalSetAddress rendering, isOpen:', isSetAddressModalOpen);
 
     useEffect(() => {
         if (citySearch.length > 2 && isSearching) {
@@ -54,7 +54,7 @@ const ModalSetAddress: React.FC = () => {
     const searchCities = async (search: string) => {
         setIsLoading(true);
         try {
-            const response = await fetch(`http://localhost:3001/api/v1/locations/search-cities?search=${encodeURIComponent(search)}`);
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/locations/search-cities?search=${encodeURIComponent(search)}`);
             if (!response.ok) {
                 throw new Error('Failed to fetch cities');
             }
@@ -93,9 +93,9 @@ const ModalSetAddress: React.FC = () => {
             closeSetAddressModal();
         }
     };
-    console.log('ModalSetAddress rendering, isOpen:', isSetAddressModalOpen);
+    //console.log('ModalSetAddress rendering, isOpen:', isSetAddressModalOpen);
     if (!isSetAddressModalOpen) {
-        console.log('ModalSetAddress not rendering because isSetAddressModalOpen is false');
+        // console.log('ModalSetAddress not rendering because isSetAddressModalOpen is false');
         return null;
     }
 

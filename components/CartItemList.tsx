@@ -2,6 +2,7 @@
 import { useStore } from '@/stores/cartStore';
 import Image from 'next/image';
 import { FaTrash, FaPlus, FaMinus } from 'react-icons/fa';
+import { formatCurrency } from '@/lib/Helpers';
 
 const CartItemList = () => {
   const { cart, increaseQuantity, decreaseQuantity, removeFromCart } = useStore((state) => ({
@@ -27,8 +28,8 @@ const CartItemList = () => {
           </div>
           <div className="flex-grow text-center sm:text-left">
             <h3 className="font-semibold">{item.name}</h3>
-            <p className="text-gray-600">Precio: ${item.precio.toFixed(0)}</p>
-            <p className="text-gray-600">Subtotal: ${item.subtotal.toFixed(0)}</p>
+            <p className="text-gray-600">Precio: {formatCurrency(item.precio)}</p>
+            <p className="text-gray-600">Subtotal: {formatCurrency(item.subtotal)}</p>
           </div>
           <div className="flex items-center mt-4 sm:mt-0">
             <button

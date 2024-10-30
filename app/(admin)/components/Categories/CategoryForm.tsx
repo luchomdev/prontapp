@@ -1,5 +1,5 @@
 "use client"
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { FaTimes } from 'react-icons/fa';
 import Toaster from '@/components/Toaster';
 
@@ -14,6 +14,7 @@ interface Category {
   level?: number;
   path?: string;
 }
+
 
 interface CategoryFormProps {
   category: Category | null;
@@ -37,14 +38,7 @@ const CategoryForm: React.FC<CategoryFormProps> = ({ category, onClose }) => {
   const [showToaster, setShowToaster] = useState(false);
   const [allCategories, setAllCategories] = useState<Category[]>([]);
 
-  useEffect(() => {
-    fetchAllCategories();
-    if (category) {
-      fetchCategoryDetails(category.id);
-    }
-  }, [category]);
-
-  const fetchAllCategories = async () => {
+  const fetchAllCategories = useCallback(async () => {
     try {
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/categories/admin?limit=1000`, {
         credentials: 'include',
@@ -55,9 +49,9 @@ const CategoryForm: React.FC<CategoryFormProps> = ({ category, onClose }) => {
       console.error('Error fetching all categories:', error);
       showToasterMessage('Error al cargar las categorías', 'error');
     }
-  };
+  }, []);
 
-  const fetchCategoryDetails = async (categoryId: string) => {
+  const fetchCategoryDetails = useCallback(async (categoryId: string) => {
     try {
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/categories/admin?category_id=${categoryId}`, {
         credentials: 'include',
@@ -68,7 +62,14 @@ const CategoryForm: React.FC<CategoryFormProps> = ({ category, onClose }) => {
       console.error('Error fetching category details:', error);
       showToasterMessage('Error al cargar los detalles de la categoría', 'error');
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchAllCategories();
+    if (category) {
+      fetchCategoryDetails(category.id);
+    }
+  }, [category, fetchAllCategories, fetchCategoryDetails]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;

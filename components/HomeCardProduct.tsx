@@ -6,6 +6,7 @@ import { FaShoppingCart, FaEye } from 'react-icons/fa';
 import { ProductOrProductForHome, parseProductImages } from '@/lib/dataLayer';
 import { useStore } from '@/stores/cartStore';
 import Toaster from '@/components/Toaster';
+import { formatCurrency } from '@/lib/Helpers';
 
 interface HomeCardProductProps {
   product: ProductOrProductForHome;
@@ -69,11 +70,11 @@ const HomeCardProduct: React.FC<HomeCardProductProps> = ({ product }) => {
       <div className="flex justify-between items-center mb-1 md:mb-2">
         {product.price_fake_discount ? (
           <>
-            <span className="line-through text-red-500 text-2xs md:text-xs">${Number(product.price_fake_discount).toFixed(0)}</span>
-            <span className="font-bold text-xs md:text-sm">${Number(product.precio_final).toFixed(0)}</span>
+            <span className="line-through text-red-500 text-2xs md:text-xs">{formatCurrency(Number(product.price_fake_discount))}</span>
+            <span className="font-bold text-xs md:text-sm">{formatCurrency(Number(product.precio_final))}</span>
           </>
         ) : (
-          <span className="font-bold text-xs md:text-sm">${Number(product.precio_final).toFixed(0)}</span>
+          <span className="font-bold text-xs md:text-sm">{formatCurrency(Number(product.precio_final))}</span>
         )}
       </div>
       <div className="flex items-center mb-1 md:mb-2">

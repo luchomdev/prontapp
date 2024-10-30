@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { FaCheckCircle, FaTimesCircle } from 'react-icons/fa';
+// components/Toaster.tsx
+import React from 'react';
 
 interface ToasterProps {
   message: string;
@@ -8,23 +8,18 @@ interface ToasterProps {
 }
 
 const Toaster: React.FC<ToasterProps> = ({ message, type, onClose }) => {
-  const [isVisible, setIsVisible] = useState(true);
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsVisible(false);
-      onClose();
-    }, 5000);
-
-    return () => clearTimeout(timer);
-  }, [onClose]);
-
-  if (!isVisible) return null;
-
   return (
-    <div className={`fixed bottom-4 right-4 p-4 rounded-md shadow-lg ${type === 'success' ? 'bg-green-500' : 'bg-red-500'} text-white flex items-center`}>
-      {type === 'success' ? <FaCheckCircle className="mr-2" /> : <FaTimesCircle className="mr-2" />}
+    <div className="fixed top-4 right-4 z-50 flex items-center shadow-lg rounded-lg px-4 py-3 text-white transition-all duration-300 ease-in-out"
+         style={{ 
+           backgroundColor: type === 'success' ? '#10B981' : '#EF4444',
+         }}>
       <span>{message}</span>
+      <button
+        onClick={onClose}
+        className="ml-3 font-bold hover:opacity-75"
+      >
+        ×
+      </button>
     </div>
   );
 };

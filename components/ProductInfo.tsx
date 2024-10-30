@@ -1,5 +1,6 @@
 import React from 'react';
 import RatingStars from '@/components/RatingStars';
+import { formatCurrency } from '@/lib/Helpers';
 
 interface ProductInfoProps {
   name: string;
@@ -38,16 +39,16 @@ const ProductInfo: React.FC<ProductInfoProps> = ({
         {shouldShowDiscount ? (
           <>
             <p className="text-sm text-red-500 line-through mr-2">
-              ${discountPrice!.toFixed(0)}
+              {formatCurrency(discountPrice!)}
 
             </p>
             <p className="text-2xl font-bold text-slate-600">
-              ${currentPrice.toFixed(0)}
+              {formatCurrency(currentPrice)}
             </p>
           </>
         ) : (
           <p className="text-2xl font-bold text-slate-600">
-            ${currentPrice.toFixed(0)}
+            {formatCurrency(currentPrice)}
           </p>
         )}
       </div>

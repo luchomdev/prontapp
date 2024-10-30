@@ -79,10 +79,6 @@ const AdminOrdersPage: React.FC = () => {
         fetchOrders(1);
     }, [fetchOrders]);
 
-    useEffect(() => {
-        fetchOrders(1);
-    }, []);
-
     const handleLoadMore = () => {
         if (page < totalPages) {
             setIsLoadingMore(true);

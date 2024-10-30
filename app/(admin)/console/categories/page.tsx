@@ -1,5 +1,5 @@
 "use client"
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { FaPlus } from 'react-icons/fa';
 import { useRouter } from 'next/navigation';
 import CategoryCard from '@/app/(admin)/components/Categories/CategoryCard';
@@ -21,33 +21,38 @@ interface Category {
 }
 
 const CategoriesAdminPage = () => {
-    const router = useRouter();
-    const [categories, setCategories] = useState<Category[]>([]);
-    const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
-    const [showForm, setShowForm] = useState(false);
-    const [page, setPage] = useState(1);
-    const [limit] = useState(10);
-    const [isLoading, setIsLoading] = useState(false);
-    const [hasMore, setHasMore] = useState(true);
-    const [searchTerm, setSearchTerm] = useState('');
-    const [toasterMessage, setToasterMessage] = useState('');
-    const [toasterType, setToasterType] = useState<'success' | 'error'>('success');
-    const [showToaster, setShowToaster] = useState(false);
+  const router = useRouter();
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
+  const [showForm, setShowForm] = useState(false);
+  const [page, setPage] = useState(1);
+  const [limit] = useState(10);
+  const [isLoading, setIsLoading] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [toasterMessage, setToasterMessage] = useState('');
+  const [toasterType, setToasterType] = useState<'success' | 'error'>('success');
+  const [showToaster, setShowToaster] = useState(false);
+
+    const isInitialMount = useRef(true);
+    const searchTermRef = useRef(searchTerm);
+  const pageRef = useRef(page);
+  const isLoadingRef = useRef(isLoading);
 
   useEffect(() => {
-    fetchCategories();
-  }, [searchTerm]);
+    isLoadingRef.current = isLoading;
+  }, [isLoading]);
 
-  const fetchCategories = async (loadMore = false) => {
-    if (isLoading) return;
+  const fetchCategories = useCallback(async (loadMore = false) => {
+    if (isLoadingRef.current) return;
     setIsLoading(true);
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/categories/admin?page=${loadMore ? page + 1 : 1}&limit=${limit}&search=${searchTerm}`, {
+      const currentPage = loadMore ? pageRef.current + 1 : 1;
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/categories/admin?page=${currentPage}&limit=${limit}&search=${searchTermRef.current}`, {
         credentials: 'include'
       });
       
       if (response.status === 401) {
-        // Sesión expirada
         setToasterMessage('La sesión ha expirado. Por favor, inicie sesión nuevamente.');
         setToasterType('error');
         setShowToaster(true);
@@ -64,10 +69,12 @@ const CategoriesAdminPage = () => {
       const data = await response.json();
       if (loadMore) {
         setCategories(prevCategories => [...prevCategories, ...data.categories]);
-        setPage(prevPage => prevPage + 1);
+        setPage(currentPage);
+        pageRef.current = currentPage;
       } else {
         setCategories(data.categories);
         setPage(1);
+        pageRef.current = 1;
       }
       setHasMore(data.categories.length === limit);
     } catch (error) {
@@ -78,46 +85,59 @@ const CategoriesAdminPage = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [router, limit]);
 
-  const handleModify = (category: Category) => {
-    setSelectedCategory(category);
-    setShowForm(true);
-  };
+  useEffect(() => {
+    searchTermRef.current = searchTerm;
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      fetchCategories();
+    } else {
+      const timer = setTimeout(() => {
+        setPage(1);
+        pageRef.current = 1;
+        fetchCategories();
+      }, 300);
+      return () => clearTimeout(timer);
+    }
+  }, [searchTerm, fetchCategories]);
 
-  const handleCreate = () => {
-    setSelectedCategory(null);
-    setShowForm(true);
-  };
+const handleModify = (category: Category) => {
+  setSelectedCategory(category);
+  setShowForm(true);
+};
 
-  const handleFormClose = () => {
-    setShowForm(false);
-    setSelectedCategory(null);
-    fetchCategories();
-  };
+const handleCreate = () => {
+  setSelectedCategory(null);
+  setShowForm(true);
+};
 
-  const handleLoadMore = () => {
-    fetchCategories(true);
-  };
+const handleFormClose = () => {
+  setShowForm(false);
+  setSelectedCategory(null);
+  fetchCategories();
+};
 
-  const handleSearch = (term: string) => {
-    setSearchTerm(term);
-  };
+const handleLoadMore = () => {
+  fetchCategories(true);
+};
 
-  const handleResetSearch = () => {
-    setSearchTerm('');
-  };
+const handleSearch = (term: string) => {
+  setSearchTerm(term);
+};
+
+const handleResetSearch = () => {
+  setSearchTerm('');
+};
 
   const renderCategories = (categories: Category[]) => {
     if (searchTerm) {
-      // Si hay un término de búsqueda, renderizar las categorías sin estructura jerárquica
       return categories.map(category => (
         <div key={category.id} className="mb-2">
           <CategoryCard category={category} onModify={() => handleModify(category)} />
         </div>
       ));
     } else {
-      // Si no hay término de búsqueda, usar la estructura jerárquica
       return renderCategoryTree(categories);
     }
   };

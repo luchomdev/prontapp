@@ -1,5 +1,5 @@
 "use client"
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import PageTitle from '@/components/panel/PageTitle';
 import OrderFilter from '@/components/panel/OrderFilter';
 import OrderCard from '@/components/panel/OrderCard';
@@ -25,7 +25,7 @@ interface Order {
 const OrdersPage: React.FC = () => {
     const [orders, setOrders] = useState<Order[]>([]);
     const [page, setPage] = useState(1);
-    const [limit, setLimit] = useState(10);
+    const [limit] = useState(10);
     const [totalOrders, setTotalOrders] = useState(0);
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
@@ -33,7 +33,7 @@ const OrdersPage: React.FC = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [isLoadingMore, setIsLoadingMore] = useState(false);
 
-    const fetchOrders = async (page: number, limit: number, start?: string, end?: string, orderIdFilter?: string) => {
+    const fetchOrders = useCallback(async (page: number, limit: number, start?: string, end?: string, orderIdFilter?: string) => {
         let url = `${process.env.NEXT_PUBLIC_API_URL}/orders?page=${page}&limit=${limit}`;
         if (start && end) {
             url += `&start_date=${encodeURIComponent(start)}&end_date=${encodeURIComponent(end)}`;
@@ -51,27 +51,29 @@ const OrdersPage: React.FC = () => {
             console.error('Error fetching orders:', error);
             return null;
         }
-    };
+    }, []);
+
+    const loadInitialOrders = useCallback(async () => {
+        setIsLoading(true);
+        const data = await fetchOrders(1, limit);
+        if (data) {
+            setOrders(data.orders);
+            setTotalOrders(data.totalOrders);
+            setPage(1);
+        }
+        setIsLoading(false);
+    }, [fetchOrders, limit]);
 
     useEffect(() => {
-        const loadInitialOrders = async () => {
-            setIsLoading(true);
-            const data = await fetchOrders(page, limit);
-            if (data) {
-                setOrders(data.orders);
-                setTotalOrders(data.totalOrders);
-            }
-            setIsLoading(false);
-        };
         loadInitialOrders();
-    }, []);
+    }, [loadInitialOrders]);
 
     const handleLoadMore = async () => {
         setIsLoadingMore(true);
         const nextPage = page + 1;
         const data = await fetchOrders(nextPage, limit, startDate, endDate, orderId);
         if (data) {
-            setOrders([...orders, ...data.orders]);
+            setOrders(prevOrders => [...prevOrders, ...data.orders]);
             setPage(nextPage);
         }
         setIsLoadingMore(false);
@@ -126,7 +128,7 @@ const OrdersPage: React.FC = () => {
                 )}
             </div>
             {!isLoading && orders.length < totalOrders && (
-                <LoadMoreButton onLoadMore={handleLoadMore} />
+                <LoadMoreButton onLoadMore={handleLoadMore} isLoading={isLoadingMore} />
             )}
         </div>
     );

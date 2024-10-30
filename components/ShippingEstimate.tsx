@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { FaInfoCircle, FaChevronDown, FaChevronUp } from 'react-icons/fa';
+import { formatCurrency } from '@/lib/Helpers';
 
 interface ShippingEstimateProps {
   cityName: string;
@@ -23,7 +24,7 @@ const ShippingEstimate: React.FC<ShippingEstimateProps> = ({ cityName, shippingC
       </div>
       {isOpen && (
         <p className="text-sm text-gray-600 mt-2">
-          El costo aproximado del envío a {cityName.toLowerCase()} de este producto es de ${shippingCost.toFixed(0)}.
+          El costo aproximado del envío a {cityName.toLowerCase()} de este producto es de {formatCurrency(shippingCost)}
         </p>
       )}
     </div>

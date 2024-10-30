@@ -1,5 +1,5 @@
 "use client"
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from "next/navigation";
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
 import Toaster from '@/components/Toaster';
@@ -21,7 +21,7 @@ const ResetPasswordForm: React.FC = () => {
   const [toastMessage, setToastMessage] = useState('');
   const [toastType, setToastType] = useState<'success' | 'error'>('success');
 
-  useAuthCheck(['email','token']);
+  useAuthCheck(['email', 'token']);
 
   useEffect(() => {
     if (!email || !token) {
@@ -81,63 +81,63 @@ const ResetPasswordForm: React.FC = () => {
   const passwordsMatch = newPassword === confirmPassword && newPassword !== '';
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="relative">
-        <label htmlFor="newPassword" className="block text-sm font-medium text-gray-700">Nueva Contraseña</label>
-        <input
-          type={showNewPassword ? "text" : "password"}
-          id="newPassword"
-          value={newPassword}
-          onChange={(e) => setNewPassword(e.target.value)}
-          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-orange-500 focus:border-orange-500"
-          required
-        />
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="relative">
+          <label htmlFor="newPassword" className="block text-sm font-medium text-gray-700">Nueva Contraseña</label>
+          <input
+            type={showNewPassword ? "text" : "password"}
+            id="newPassword"
+            value={newPassword}
+            onChange={(e) => setNewPassword(e.target.value)}
+            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-orange-500 focus:border-orange-500"
+            required
+          />
+          <button
+            type="button"
+            onClick={() => togglePasswordVisibility('new')}
+            className="absolute inset-y-0 right-0 pr-3 flex items-center text-sm leading-5"
+          >
+            {showNewPassword ? <FaEyeSlash /> : <FaEye />}
+          </button>
+        </div>
+
+        <div className="relative">
+          <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">Repite Contraseña</label>
+          <input
+            type={showConfirmPassword ? "text" : "password"}
+            id="confirmPassword"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-orange-500 focus:border-orange-500"
+            required
+          />
+          <button
+            type="button"
+            onClick={() => togglePasswordVisibility('confirm')}
+            className="absolute inset-y-0 right-0 pr-3 flex items-center text-sm leading-5"
+          >
+            {showConfirmPassword ? <FaEyeSlash /> : <FaEye />}
+          </button>
+        </div>
+
+        {error && <p className="text-red-500 text-sm">{error}</p>}
+
         <button
-          type="button"
-          onClick={() => togglePasswordVisibility('new')}
-          className="absolute inset-y-0 right-0 pr-3 flex items-center text-sm leading-5"
+          type="submit"
+          className="w-full bg-orange-500 text-white py-2 rounded hover:bg-orange-600 disabled:bg-orange-300 disabled:cursor-not-allowed"
+          disabled={!passwordsMatch || isSubmitting}
         >
-          {showNewPassword ? <FaEyeSlash /> : <FaEye />}
+          {isSubmitting ? 'Procesando...' : 'Restablecer Contraseña'}
         </button>
-      </div>
 
-      <div className="relative">
-        <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">Repite Contraseña</label>
-        <input
-          type={showConfirmPassword ? "text" : "password"}
-          id="confirmPassword"
-          value={confirmPassword}
-          onChange={(e) => setConfirmPassword(e.target.value)}
-          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-orange-500 focus:border-orange-500"
-          required
-        />
-        <button
-          type="button"
-          onClick={() => togglePasswordVisibility('confirm')}
-          className="absolute inset-y-0 right-0 pr-3 flex items-center text-sm leading-5"
-        >
-          {showConfirmPassword ? <FaEyeSlash /> : <FaEye />}
-        </button>
-      </div>
-
-      {error && <p className="text-red-500 text-sm">{error}</p>}
-
-      <button 
-        type="submit" 
-        className="w-full bg-orange-500 text-white py-2 rounded hover:bg-orange-600 disabled:bg-orange-300 disabled:cursor-not-allowed"
-        disabled={!passwordsMatch || isSubmitting}
-      >
-        {isSubmitting ? 'Procesando...' : 'Restablecer Contraseña'}
-      </button>
-
-      {showToast && (
-        <Toaster
-          message={toastMessage}
-          type={toastType}
-          onClose={() => setShowToast(false)}
-        />
-      )}
-    </form>
+        {showToast && (
+          <Toaster
+            message={toastMessage}
+            type={toastType}
+            onClose={() => setShowToast(false)}
+          />
+        )}
+      </form>
   );
 };
 

@@ -1,4 +1,5 @@
 import React from 'react';
+import { formatCurrency } from '@/lib/Helpers';
 
 interface TransactionInfoProps {
   status: 'approved' | 'pending';
@@ -27,7 +28,7 @@ const TransactionInfo: React.FC<TransactionInfoProps> = ({
         </div>
         <div>
           <p className="font-medium">Valor Pagado:</p>
-          <p>${Number(amountPaid).toFixed(0)}</p>
+          <p>{formatCurrency(Number(amountPaid))}</p>
         </div>
         <div>
           <p className="font-medium">Estado:</p>

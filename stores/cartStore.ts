@@ -128,6 +128,7 @@ interface StoreActions {
   toggleSidebar: () => void;
   addProductsToGroups: (productId: string) => void;
   clearProductsToGroup: () => void;
+  resetAllState: () => void;
 }
 
 const initialState: StoreState = {
@@ -356,6 +357,25 @@ export const useStore = create<StoreState & StoreActions>()(
         return { productsToGroup: updatedProductsToGroup };
       }),
       clearProductsToGroup: () => set({ productsToGroup: [] }),
+      resetAllState: () => set((state) => ({
+        ...state,
+        cart: {},
+        recentlyViewedProducts: {},
+        subtotalsValue: 0,
+        totalCartValue: 0,
+        totalShippingCost: 0,
+        customerInfo: null,
+        shippingQuote: [],
+        ePaycoToken: null,
+        isLocationModalOpen: false,
+        isSetAddressModalOpen: false,
+        totalItems: 0,
+        payment: 0,
+        tmp_order_id: null,
+        productsToGroup: [],
+        // Note: We're not resetting isAuthenticated, user, addresses, and isSidebarCollapsed
+        // as these might need to persist across sessions or be handled separately
+      })),
     }),
     {
       name: 'prontapp-store',

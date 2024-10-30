@@ -5,6 +5,9 @@ import { cache } from 'react';
 const API_BASE_URL = process.env.API_BASE_URL || '';
 export const IMAGE_BASE_URL = process.env.IMAGE_BASE_URL || '';
 
+export interface ConfigResponse {
+    [key: string]: string | null;
+  }
 
 export interface Category {
     id: string;
@@ -160,6 +163,33 @@ export interface ProductReviews {
     created_at: Date;
     updated_at: Date;
     user_name: string;
+}
+
+export interface BestSellerProduct {
+    id: string;
+    stock_id: number;
+    name: string;
+    images: string;
+    price_by_unit: string;
+    price_fake_discount: string | null;
+    precio_final: number;
+    min_qty: number;
+    measures: string;
+    seo_slug: string | null;
+    total_sold: string;
+}
+
+export interface BestSellerResponse {
+    products: BestSellerProduct[];
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+}
+
+interface ProductListQueryParams {
+    page?: number;
+    limit?: number;
 }
 
 // Función auxiliar para parsear las imágenes
@@ -367,3 +397,173 @@ export const getQRCode = cache(async (): Promise<string> => {
 export function stripHtmlTags(str: string) {
     return str.replace(/<[^>]*>/g, '');
 }
+
+/**
+ * Obtiene las configuraciones públicas del sistema
+ * @param vars - String de variables separadas por coma (ejemplo: "faqs,site_name")
+ * @returns Promise con un objeto que contiene las configuraciones solicitadas
+ */
+export const getPublicConfig = cache(async (vars: string): Promise<ConfigResponse> => {
+    try {
+        const queryParams = new URLSearchParams({ vars });
+        const response = await fetch(
+            `${API_BASE_URL}/config/public?${queryParams.toString()}`, 
+            { 
+                next: { revalidate: 3600 }, // Cache por 1 hora
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            }
+        );
+
+        if (!response.ok) {
+            throw new Error('Failed to fetch configurations');
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error('Error fetching configurations:', error);
+        throw error;
+    }
+});
+
+/**
+ * Obtiene los productos en tendencia
+ * @param params - Objeto con parámetros de consulta (page, limit)
+ * @returns Promise con la lista de productos en tendencia
+ */
+export const getTrendyProducts = cache(async (params: ProductListQueryParams = {}): Promise<ProductsResponse> => {
+    try {
+        const queryParams = new URLSearchParams();
+        Object.entries(params).forEach(([key, value]) => {
+            if (value !== undefined) {
+                queryParams.append(key, value.toString());
+            }
+        });
+
+        const url = `${API_BASE_URL}/products/trendy?${queryParams.toString()}`;
+        const response = await fetch(url, { next: { revalidate: 3600 } });
+        
+        if (!response.ok) {
+            throw new Error('Failed to fetch trendy products');
+        }
+        
+        const data = await response.json();
+
+        return {
+            ...data,
+            products: data.products.map((product: ProductOrProductForHome) => ({
+                ...product,
+                stock_id: Number(product.stock_id),
+                product_id: Number(product.product_id),
+                price_by_unit: parseFloat(product.price_by_unit.toString()),
+                average_rating: parseFloat(product.average_rating.toString()),
+                rating_count: parseInt(product.rating_count.toString(), 10),
+                category_image_data: product.category_image_data ? `${IMAGE_BASE_URL}${product.category_image_data}` : undefined,
+                variants: product.variants.map(variant => ({
+                    ...variant,
+                    stock_id: Number(variant.stock_id),
+                    product_id: Number(variant.product_id),
+                    price_by_unit: Number(variant.price_by_unit)
+                }))
+            }))
+        };
+    } catch (error) {
+        console.error('Error fetching trendy products:', error);
+        throw error;
+    }
+});
+
+/**
+ * Obtiene los productos con descuento
+ * @param params - Objeto con parámetros de consulta (page, limit)
+ * @returns Promise con la lista de productos con descuento
+ */
+export const getDiscountProducts = cache(async (params: ProductListQueryParams = {}): Promise<ProductsResponse> => {
+    try {
+        const queryParams = new URLSearchParams();
+        Object.entries(params).forEach(([key, value]) => {
+            if (value !== undefined) {
+                queryParams.append(key, value.toString());
+            }
+        });
+
+        const url = `${API_BASE_URL}/products/public/discount?${queryParams.toString()}`;
+        const response = await fetch(url, { next: { revalidate: 3600 } });
+        
+        if (!response.ok) {
+            throw new Error('Failed to fetch discount products');
+        }
+        
+        const data = await response.json();
+
+        return {
+            ...data,
+            products: data.products.map((product: ProductOrProductForHome) => ({
+                ...product,
+                stock_id: Number(product.stock_id),
+                product_id: Number(product.product_id),
+                price_by_unit: parseFloat(product.price_by_unit.toString()),
+                average_rating: parseFloat(product.average_rating.toString()),
+                rating_count: parseInt(product.rating_count.toString(), 10),
+                category_image_data: product.category_image_data ? `${IMAGE_BASE_URL}${product.category_image_data}` : undefined,
+                variants: product.variants.map(variant => ({
+                    ...variant,
+                    stock_id: Number(variant.stock_id),
+                    product_id: Number(variant.product_id),
+                    price_by_unit: Number(variant.price_by_unit)
+                }))
+            }))
+        };
+    } catch (error) {
+        console.error('Error fetching discount products:', error);
+        throw error;
+    }
+});
+
+/**
+ * Obtiene los productos más vendidos
+ * @param params - Objeto con parámetros de consulta (page, limit)
+ * @returns Promise con la lista de productos más vendidos
+ */
+export const getBestSellerProducts = cache(async (params: ProductListQueryParams = {}): Promise<BestSellerResponse> => {
+    try {
+        const queryParams = new URLSearchParams();
+        Object.entries(params).forEach(([key, value]) => {
+            if (value !== undefined) {
+                queryParams.append(key, value.toString());
+            }
+        });
+
+        const response = await fetch(
+            `${API_BASE_URL}/products/public/bestseller?${queryParams.toString()}`,
+            { 
+                next: { revalidate: 3600 },
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            }
+        );
+
+        if (!response.ok) {
+            throw new Error('Failed to fetch bestseller products');
+        }
+
+        const data = await response.json();
+        return {
+            ...data,
+            products: data.products.map((product: BestSellerProduct) => ({
+                ...product,
+                stock_id: Number(product.stock_id),
+                price_by_unit: product.price_by_unit,
+                price_fake_discount: product.price_fake_discount,
+                precio_final: product.precio_final ? Number(product.precio_final) : null,
+                min_qty: Number(product.min_qty),
+                total_sold: product.total_sold,
+            }))
+        };
+    } catch (error) {
+        console.error('Error fetching bestseller products:', error);
+        throw error;
+    }
+});

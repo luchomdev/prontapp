@@ -35,7 +35,7 @@ export async function generateMetadata(
     sort_by: sortBy
   });
 
-  const title = q 
+  const title = q
     ? `Resultados para "${q}" | Prontapp E-commerce (Página ${currentPage})`
     : `Todos los productos | Prontapp E-commerce (Página ${currentPage})`;
 
@@ -66,11 +66,11 @@ export async function generateMetadata(
 
 // Helper function to filter out undefined values and convert to string
 const filterParams = (params: Record<string, string | undefined>): Record<string, string> => {
-return Object.fromEntries(
-  Object.entries(params)
-    .filter(([_, value]) => value !== undefined)
-    .map(([key, value]) => [key, String(value)])
-);
+  return Object.fromEntries(
+    Object.entries(params)
+      .filter(([_, value]) => value !== undefined)
+      .map(([key, value]) => [key, String(value)])
+  );
 };
 
 export default async function SearchPage({ searchParams }: SearchPageProps) {
@@ -89,10 +89,15 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
 
   return (
     <div>
-      <SearchResultsHeader
-        searchTerm={q || ''}
-        totalResults={data.total}
-      />
+      {q ?
+        (<SearchResultsHeader
+          searchTerm={q || ''}
+          totalResults={data.total}
+        />):(
+          <h1 className='text-2xl md:text-3xl m-2 md:m-4'>{data.total}, productos</h1>
+        )
+      }
+
       <Suspense fallback={<SkeletonProductsListWrapper count={data.products.length} />}>
         <ProductsListWrapper products={data.products} />
       </Suspense>

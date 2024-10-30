@@ -4,24 +4,28 @@ import { FaTimes, FaTrash } from 'react-icons/fa';
 import { useStore } from '@/stores/cartStore';
 import MiniCartProduct from '@/components/MiniCartProduct';
 import { useRouter } from 'next/navigation';
+import { formatCurrency } from '@/lib/Helpers';
 
 const CartSidebar: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen, onClose }) => {
   const router = useRouter();
-  const { cart, removeFromCart, subtotalsValue, isAuthenticated, shippingAddress } = useStore(state => ({
+  const { cart, removeFromCart, subtotalsValue, isAuthenticated, shippingAddress, totalItems } = useStore(state => ({
     cart: state.cart,
     removeFromCart: state.removeFromCart,
     subtotalsValue: state.subtotalsValue,
     isAuthenticated: state.isAuthenticated,
-    shippingAddress: state.shippingAddress
+    shippingAddress: state.shippingAddress,
+    totalItems: state.totalItems
   }));
 
-  const isActionEnabled = isAuthenticated && !!shippingAddress;
+  const isActionEnabled = isAuthenticated && !!shippingAddress && totalItems > 0;
 
   if (!isOpen) return null;
 
   const handleViewCart = () => {
-    router.push('/cart');
-    onClose();
+    if (isActionEnabled) {
+      router.push('/cart');
+      onClose();
+    }
   };
 
   const handleCheckout = () => {
@@ -48,9 +52,12 @@ const CartSidebar: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpe
             onRemove={removeFromCart} 
           />
         ))}
+        {totalItems === 0 && (
+          <p className="text-center text-gray-500 mt-4">Tu carrito está vacío</p>
+        )}
       </div>
       <div className="p-4 border-t">
-        <p className="text-right mb-2">Total: ${subtotalsValue.toFixed(0)}</p>
+        <p className="text-right mb-2">Total: {formatCurrency(subtotalsValue)}</p>
         <button 
           className="w-full mb-2 bg-orange-500 text-white py-2 rounded hover:bg-orange-600 disabled:bg-gray-300 disabled:cursor-not-allowed"
           onClick={handleViewCart}
@@ -67,7 +74,13 @@ const CartSidebar: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpe
         </button>
         {!isActionEnabled && (
           <p className="mt-2 text-sm text-red-500 text-center">
-            {!isAuthenticated ? 'Inicia sesión para continuar' : 'Establece una dirección de envío'}
+            {!isAuthenticated 
+              ? 'Inicia sesión para continuar' 
+              : !shippingAddress 
+                ? 'Establece una dirección de envío'
+                : totalItems === 0
+                  ? 'Agrega productos al carrito'
+                  : ''}
           </p>
         )}
       </div>

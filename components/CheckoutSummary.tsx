@@ -4,6 +4,7 @@ import { useStore } from '@/stores/cartStore';
 import { useRouter } from 'next/navigation';
 import PaySecureText from '@/components/SecurePaymentText';
 import SkeletonSummary from '@/components/skeletons/SkeletonSummary';
+import { formatCurrency } from '@/lib/Helpers';
 
 const CheckoutSummary = () => {
   const router = useRouter();
@@ -86,7 +87,7 @@ const CheckoutSummary = () => {
     <div className="bg-white p-6 rounded-lg shadow">
       <h2 className="text-2xl font-bold mb-4">Resumen del Pedido</h2>
       <div className="mb-4">
-        <p className="font-semibold">Subtotal en productos: ${subtotalsValue.toFixed(0)}</p>
+        <p className="font-semibold">Subtotal en productos: {formatCurrency(subtotalsValue)}</p>
         <p className="text-sm text-gray-600">Cantidad de items: {totalItems}</p>
       </div>
       <div className="mb-4">
@@ -98,10 +99,10 @@ const CheckoutSummary = () => {
             <p>{shippingAddress.addressComplement}</p>
           </div>
         )}
-        <p className="mt-2">Costo de envío: ${totalShippingCost.toFixed(0)}</p>
+        <p className="mt-2">Costo de envío: {formatCurrency(totalShippingCost)}</p>
       </div>
       <div className="mb-4">
-        <p className="font-semibold">Total a pagar: ${totalCartValue.toFixed(0)}</p>
+        <p className="font-semibold">Total a pagar: {formatCurrency(totalCartValue)}</p>
       </div>
       <button
         onClick={handlePayment}

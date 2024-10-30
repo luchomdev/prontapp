@@ -1,5 +1,5 @@
 "use client"
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import ConfigList from '@/app/(admin)/components/config/ConfigList';
 import EditConfigModal from '@/app/(admin)/components/config/EditConfigModal';
@@ -20,11 +20,7 @@ const ConfigPage: React.FC = () => {
   const [toastType, setToastType] = useState<'success' | 'error'>('success');
   const router = useRouter();
 
-  useEffect(() => {
-    fetchConfigs();
-  }, []);
-
-  const fetchConfigs = async () => {
+  const fetchConfigs = useCallback(async () => {
     try {
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/config`, {
         credentials: 'include'
@@ -38,7 +34,11 @@ const ConfigPage: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchConfigs();
+  }, [fetchConfigs]);
 
   const handleEditConfig = (config: Config) => {
     setEditingConfig(config);

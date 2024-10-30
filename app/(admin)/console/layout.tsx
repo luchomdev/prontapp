@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter, Roboto_Mono } from "next/font/google";
 import "../../globals.css";
+import '@mdxeditor/editor/style.css';
 import ClientLayout from "@/app/(admin)/components/ClientLayout";
 import Hydration from "@/components/Hydration";
 import { AuthInitializer } from "@/components/auth/AuthInitializer";

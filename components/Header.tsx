@@ -17,7 +17,8 @@ import ModalCustomerZone from '@/components/auth/ModalCustomerZone';
 import { useStore } from '@/stores/cartStore';
 import { useCurrentUser, useIsAuthenticated } from '@/lib/clientAuthHelper';
 import HeaderSkeleton from './skeletons/SkeletonHeader';
-import ColFlag from '@/components/ColFlag';
+//import ColFlag from '@/components/ColFlag';
+import { formatCurrency } from '@/lib/Helpers';
 
 
 interface HeaderProps {
@@ -35,7 +36,7 @@ const Header: React.FC<HeaderProps> = ({ categories, highlightCategories }) => {
         checkAndShowLocationModal,
         shippingAddress,
         totalItems,
-        subtotalsValue
+        subtotalsValue,
     } = useStore((state) => ({
         isLoading: state.isLoading,
         openLocationModal: state.openLocationModal,
@@ -71,6 +72,12 @@ const Header: React.FC<HeaderProps> = ({ categories, highlightCategories }) => {
         setIsCustomerZoneOpen(!isCustomerZoneOpen);
     };
 
+    const handleCartClick = () => {
+        if (totalItems > 0) {
+            setIsCartSidebarOpen(true);
+        }
+    };
+
     if (isLoading) {
         return <HeaderSkeleton />;
     }
@@ -78,7 +85,8 @@ const Header: React.FC<HeaderProps> = ({ categories, highlightCategories }) => {
         <header className="w-full">
             <div className="bg-[#FF8B39] h-10 flex items-center justify-between px-4 text-white">
                 <div className="flex items-center">
-                    <ColFlag />
+                    {/* <ColFlag /> */}
+                    <span className=" text-xl leading-5 mr-2">🇨🇴</span>
                     <span className="text-xs font-bold">COLOMBIA</span>
                 </div>
                 <div className="flex items-center">
@@ -92,20 +100,22 @@ const Header: React.FC<HeaderProps> = ({ categories, highlightCategories }) => {
                             {shippingAddress ? "Cambiar ubicación" : "Establecer ubicación"}
                         </span>
                     </button>
-                    {isAuthenticated ? (
-                        <button 
-                        className="flex items-center" 
-                        onClick={handleCustomerZoneClick}
-                        ref={customerZoneButtonRef}
+                    {isAuthenticated && user ? (
+                        <button
+                            className="flex items-center"
+                            onClick={handleCustomerZoneClick}
+                            ref={customerZoneButtonRef}
                         >
                             Hola, {user?.name}
                             <MdKeyboardArrowDown className="ml-1" />
                         </button>
                     ) : (
+
                         <button className="flex items-center" onClick={() => setIsSignInModalOpen(true)}>
                             <FaUser className="mr-1" />
                             Regístrate o Inicia sesión
                         </button>
+
                     )}
 
                 </div>
@@ -123,13 +133,16 @@ const Header: React.FC<HeaderProps> = ({ categories, highlightCategories }) => {
                     <FaSearch onClick={() => setIsSearchModalOpen(true)} className="mr-4 text-xl sm:text-2xl md:hidden lg:hidden cursor-pointer" />
                     <Link href={`/recently-viewed-products`}><FaHistory className="mr-4 text-xl sm:text-2xl hidden lg:block" /></Link>
                     <div className="flex flex-col sm:flex-row items-end sm:items-center">
-                        <div className="relative mb-1 sm:mb-0 mr-2 sm:mr-4 cursor-pointer" onClick={() => setIsCartSidebarOpen(true)}>
+                        <div 
+                            className={`relative mb-1 sm:mb-0 mr-2 sm:mr-4 ${totalItems > 0 ? 'cursor-pointer' : 'cursor-not-allowed opacity-50'}`} 
+                            onClick={handleCartClick}
+                        >
                             <FaShoppingCart className="text-xl sm:text-2xl" />
                             <span className="absolute -top-2 -right-2 bg-[#FF8B39] rounded-full text-xs w-4 h-4 sm:w-5 sm:h-5 flex items-center justify-center">
                                 {totalItems}
                             </span>
                         </div>
-                        <span className="text-sm sm:text-base">${subtotalsValue.toFixed(0)}</span>
+                        <span className="text-sm sm:text-base">{formatCurrency(Number(subtotalsValue.toFixed(0)))}</span>
                     </div>
                 </div>
             </div>
@@ -155,9 +168,8 @@ const Header: React.FC<HeaderProps> = ({ categories, highlightCategories }) => {
                 isOpen={isCartSidebarOpen}
                 onClose={() => setIsCartSidebarOpen(false)}
             />
-            <LocationPopover
-                anchorEl={locationButtonRef.current}
-            />
+            <LocationPopover anchorEl={locationButtonRef.current} />
+
             <ModalSearchMini
                 isOpen={isSearchModalOpen}
                 onClose={() => setIsSearchModalOpen(false)}
@@ -165,8 +177,8 @@ const Header: React.FC<HeaderProps> = ({ categories, highlightCategories }) => {
             />
             <ModalSignIn isOpen={isSignInModalOpen} onClose={() => setIsSignInModalOpen(false)} />
             {isCustomerZoneOpen && (
-                <ModalCustomerZone 
-                    anchorEl={customerZoneButtonRef.current} 
+                <ModalCustomerZone
+                    anchorEl={customerZoneButtonRef.current}
                     onClose={() => setIsCustomerZoneOpen(false)}
                 />
             )}

@@ -1,11 +1,11 @@
 "use client"
-import React, { useState, useEffect, useCallback, useMemo, forwardRef, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import dynamic from 'next/dynamic';
 import Image from 'next/image';
-import { FaSpinner, FaCode } from 'react-icons/fa';
+import { FaSpinner } from 'react-icons/fa';
+import dynamic from 'next/dynamic';
 import Toaster from '@/components/Toaster';
-import { Editor } from '@tinymce/tinymce-react';
+import type { MDXEditorMethods } from '@mdxeditor/editor';
 
 interface Category {
     id: string;
@@ -40,6 +40,11 @@ interface Product {
     rating_count: string;
 }
 
+// Componente MDXEditor inicializado separadamente para evitar SSR
+const InitializedMDXEditor = dynamic(
+    () => import('./InitializedMDXEditor'),
+    { ssr: false }
+);
 
 
 const EditProductForm: React.FC = () => {
@@ -54,17 +59,11 @@ const EditProductForm: React.FC = () => {
     const [toasterType, setToasterType] = useState<'success' | 'error'>('success');
     const [showToaster, setShowToaster] = useState(false);
 
-    const editorRef = useRef<any>(null);
+    const editorRef = useRef<MDXEditorMethods>(null);
 
 
-    useEffect(() => {
-        if (id) {
-            fetchProduct();
-            fetchCategories();
-        }
-    }, [id]);
-
-    const fetchProduct = async () => {
+    const fetchProduct = useCallback(async () => {
+        if (!id) return;
         setIsLoading(true);
         try {
             const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/products/${id}`, {
@@ -81,9 +80,9 @@ const EditProductForm: React.FC = () => {
         } finally {
             setIsLoading(false);
         }
-    };
+    }, [id]);
 
-    const fetchCategories = async () => {
+    const fetchCategories = useCallback(async () => {
         try {
             const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/categories/admin?limit=1000`, {
                 credentials: 'include',
@@ -97,7 +96,12 @@ const EditProductForm: React.FC = () => {
             setToasterType('error');
             setShowToaster(true);
         }
-    };
+    }, []);
+
+    useEffect(() => {
+        fetchProduct();
+        fetchCategories();
+    }, [fetchProduct, fetchCategories]);
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         if (!product) return;
@@ -193,65 +197,49 @@ const EditProductForm: React.FC = () => {
                 </div>
 
                 <div>
-                    <label className="block text-sm font-medium text-gray-700">Discount</label>
+                    <label className="block text-sm font-medium text-gray-700">Descuento(discount)</label>
                     <input type="text" name="discount" value={product.discount || ''} onChange={handleInputChange} className="mt-1 block w-full p-2 border border-gray-300 rounded-md" />
                 </div>
 
                 <div>
-                    <label className="block text-sm font-medium text-gray-700">Amount</label>
+                    <label className="block text-sm font-medium text-gray-700">Cantidad en Stock(amount)</label>
                     <input type="number" name="amount" value={product.amount} onChange={handleInputChange} className="mt-1 block w-full p-2 border border-gray-300 rounded-md" />
                 </div>
 
                 <div>
-                    <label className="block text-sm font-medium text-gray-700">Name</label>
+                    <label className="block text-sm font-medium text-gray-700">Nombre producto(name)</label>
                     <input type="text" name="name" value={product.name} onChange={handleInputChange} className="mt-1 block w-full p-2 border border-gray-300 rounded-md" />
                 </div>
 
                 <div>
-                    <label className="block text-sm font-medium text-gray-700">Description</label>
-                    <Editor
-                        apiKey="4ijtn0uks65t2rcgyeyyk6ek25dpx35i5chzk2s2zz38kd79"
-                        onInit={(evt, editor) => editorRef.current = editor}
-                        initialValue={product.description}
-                        init={{
-                            height: 500,
-                            menubar: false,
-                            plugins: [
-                                // Core editing features
-                                'anchor', 'autolink', 'charmap', 'codesample', 'emoticons', 'image', 'link', 'lists', 'media', 'searchreplace', 'table', 'visualblocks', 'wordcount','code',
-                                // Your account includes a free trial of TinyMCE premium features
-                                // Try the most popular premium features until Oct 9, 2024:
-                                // 'checklist', 'mediaembed', 'casechange', 'export', 'formatpainter', 'pageembed', 'a11ychecker', 'tinymcespellchecker', 'permanentpen', 'powerpaste', 'advtable', 'advcode', 'editimage', 'advtemplate', 'mentions', 'tinycomments', 'tableofcontents', 'footnotes', 'mergetags', 'autocorrect', 'typography', 'inlinecss', 'markdown',
-                            ],
-                            toolbar: 'undo redo code | blocks fontfamily fontsize | bold italic underline strikethrough | link image media table mergetags | addcomment showcomments | spellcheckdialog a11ycheck typography | align lineheight | checklist numlist bullist indent outdent | emoticons charmap | removeformat',
-                            tinycomments_mode: 'embedded',
-                            tinycomments_author: '',
-                            mergetags_list: [
-                                { value: 'First.Name', title: 'First Name' },
-                                { value: 'Email', title: 'Email' },
-                            ],
-                        }}
-                        onEditorChange={handleDescriptionChange}
-                    />
+                    <label className="block text-sm font-medium text-gray-700">Descripción del producto(description)</label>
+                    <div className="mt-1 block w-full border border-gray-300 rounded-md bg-white">
+                        <InitializedMDXEditor
+                            editorRef={editorRef}
+                            markdown={product.description}
+                            onChange={handleDescriptionChange}
+                            className="w-full"
+                        />
+                    </div>
                 </div>
 
                 <div>
-                    <label className="block text-sm font-medium text-gray-700">Reference</label>
+                    <label className="block text-sm font-medium text-gray-700">Referencia(reference)</label>
                     <input type="text" value={product.reference} readOnly className="mt-1 block w-full p-2 border border-gray-300 rounded-md bg-gray-100" />
                 </div>
 
                 <div>
-                    <label className="block text-sm font-medium text-gray-700">Minimal Price</label>
+                    <label className="block text-sm font-medium text-gray-700">Precio mínimo(minimal_price)</label>
                     <input type="text" value={product.minimal_price} readOnly className="mt-1 block w-full p-2 border border-gray-300 rounded-md bg-gray-100" />
                 </div>
 
                 <div>
-                    <label className="block text-sm font-medium text-gray-700">Price Dropshipping</label>
+                    <label className="block text-sm font-medium text-gray-700">Precio revendedor(price_dropshipping)</label>
                     <input type="text" value={product.price_dropshipping} readOnly className="mt-1 block w-full p-2 border border-gray-300 rounded-md bg-gray-100" />
                 </div>
 
                 <div>
-                    <label className="block text-sm font-medium text-gray-700">Price by Unit</label>
+                    <label className="block text-sm font-medium text-gray-700">Precio al público(price_by_unit)</label>
                     <input type="text" value={product.price_by_unit} readOnly className="mt-1 block w-full p-2 border border-gray-300 rounded-md bg-gray-100" />
                 </div>
 
@@ -270,30 +258,30 @@ const EditProductForm: React.FC = () => {
                 </div>
 
                 <div>
-                    <label className="block text-sm font-medium text-gray-700">Warranty</label>
+                    <label className="block text-sm font-medium text-gray-700">Garantía(warranty)</label>
                     <input type="text" value={product.warranty} readOnly className="mt-1 block w-full p-2 border border-gray-300 rounded-md bg-gray-100" />
                 </div>
 
                 <div>
-                    <label className="block text-sm font-medium text-gray-700">Measures</label>
+                    <label className="block text-sm font-medium text-gray-700">Medidas(measures)</label>
                     <input type="text" value={product.measures} readOnly className="mt-1 block w-full p-2 border border-gray-300 rounded-md bg-gray-100" />
                 </div>
 
                 <div>
-                    <label className="block text-sm font-medium text-gray-700">Merge By</label>
+                    <label className="block text-sm font-medium text-gray-700">Agrupados por (merge_by)</label>
                     <input type="text" value={product.merge_by || ''} readOnly className="mt-1 block w-full p-2 border border-gray-300 rounded-md bg-gray-100" />
                 </div>
 
                 <div>
-                    <label className="block text-sm font-medium text-gray-700">Category</label>
+                    <label className="block text-sm font-medium text-gray-700">Categoria del producto(category_id)</label>
                     <select name="category_id" value={product.category_id || ''} onChange={handleInputChange} className="mt-1 block w-full p-2 border border-gray-300 rounded-md">
-                        <option value="">Select a category</option>
+                        <option value="">Selecciona una categoría</option>
                         {renderCategoryOptions(categories)}
                     </select>
                 </div>
 
                 <div>
-                    <label className="block text-sm font-medium text-gray-700">Min Quantity</label>
+                    <label className="block text-sm font-medium text-gray-700">Minima cantidad al carrito (min_qty)</label>
                     <input type="number" name="min_qty" value={product.min_qty} onChange={handleInputChange} className="mt-1 block w-full p-2 border border-gray-300 rounded-md" />
                 </div>
 

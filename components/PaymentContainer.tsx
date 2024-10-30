@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Cash from '@/components/Cash';
 import EpaycoWithTc from '@/components/EpaycoWithTc';
 import OrderSummary from '@/components/OrderSummary';
@@ -74,7 +74,7 @@ const PaymentContainer: React.FC<PaymentContainerProps> = ({ epaycoToken, user }
         }
     }, [user, shippingAddress, setCustomerInfo]);
 
-    const createOrUpdateTmpOrder = async () => {
+    const createOrUpdateTmpOrder = useCallback(async () => {
         setIsCreatingTmpOrder(true);
         try {
             const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/orders/tmp-order`, {
@@ -110,13 +110,13 @@ const PaymentContainer: React.FC<PaymentContainerProps> = ({ epaycoToken, user }
         } finally {
             setIsCreatingTmpOrder(false);
         }
-    };
+    }, [cart, shippingQuote, shippingAddress, subtotalsValue, totalCartValue, totalShippingCost, customerInfo, payment, user.id, user.email, tmp_order_id, setTmpOrderId]);
 
     useEffect(() => {
         if (customerInfo && shippingAddress) {
             createOrUpdateTmpOrder();
         }
-    }, [payment, customerInfo, shippingAddress, cart, shippingQuote, subtotalsValue, totalCartValue, totalShippingCost]);
+    }, [customerInfo, shippingAddress, createOrUpdateTmpOrder]);
 
     const handleToggle = (method: 'cash' | 'epayco') => {
         setActiveMethod(prevMethod => prevMethod === method ? null : method);

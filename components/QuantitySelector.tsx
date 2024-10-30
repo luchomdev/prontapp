@@ -1,26 +1,31 @@
 "use client"
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { useStore } from '@/stores/cartStore';
 
 interface QuantitySelectorProps {
   quantity: number;
   setQuantity: (quantity: number) => void;
   maxQuantity: number;
-  minQuantity:number;
+  minQuantity: number;
   stock_id: number;
 }
 
-const QuantitySelector: React.FC<QuantitySelectorProps> = ({ quantity, setQuantity, maxQuantity,minQuantity, stock_id }) => {
-  const {cartItem, isLoading } = useStore((state) => ({
+const QuantitySelector: React.FC<QuantitySelectorProps> = ({ quantity, setQuantity, maxQuantity, minQuantity, stock_id }) => {
+  const { cartItem, isLoading } = useStore((state) => ({
     cartItem: state.cart[stock_id],
     isLoading: state.isLoading
   }));
 
+  const initialRender = useRef(true);
+
   useEffect(() => {
-    if (cartItem) {
-      setQuantity(cartItem.cantidad || quantity);
+    if (initialRender.current) {
+      initialRender.current = false;
+      if (cartItem && cartItem.cantidad !== quantity) {
+        setQuantity(cartItem.cantidad || quantity);
+      }
     }
-  }, [cartItem, setQuantity]);
+  }, [cartItem, setQuantity, quantity]);
 
   const handleIncrease = () => {
     if (quantity < maxQuantity) {

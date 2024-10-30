@@ -1,5 +1,6 @@
 "use client"
-import React, { useState } from 'react';
+import React from 'react';
+import Image from 'next/image';
 
 interface ProductItemProps {
   name: string;
@@ -14,11 +15,18 @@ const ProductItem: React.FC<ProductItemProps> = ({
   price, 
   imageUrl
 }) => {
-
   return (
     <div className="flex items-center justify-between border-b py-4">
       <div className="flex items-center">
-        <img src={imageUrl} alt={name} className="w-20 h-20 object-cover mr-4" />
+        <div className="relative w-20 h-20 mr-4">
+          <Image
+            src={imageUrl}
+            alt={name}
+            fill
+            sizes="(max-width: 768px) 80px, 80px"
+            style={{ objectFit: 'cover' }}
+          />
+        </div>
         <div>
           <h3 className="font-semibold">{name}</h3>
           <p className="text-gray-600">Cantidad: {amount}</p>
@@ -46,7 +54,6 @@ interface AdminOrderProductsProps {
 }
 
 const AdminOrderProducts: React.FC<AdminOrderProductsProps> = ({ stocks, total_shipping_cost, orderId, delivery_state, last_state }) => {
-  
   const totalOrder = Object.values(stocks).reduce((sum, item) => sum + (item.price * item.amount), 0);
 
   return (

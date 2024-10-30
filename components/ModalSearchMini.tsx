@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { FaTimes, FaSearch } from 'react-icons/fa';
 import Image from 'next/image';
 import { parseProductImages } from '@/lib/dataLayer';
+import { formatCurrency } from '@/lib/Helpers';
 
 interface SearchResult {
   id: string;
@@ -133,7 +134,7 @@ const ModalSearchMini: React.FC<ModalSearchMiniProps> = ({ isOpen, onClose, onPr
                 </div>
                 <div>
                   <h3 className="font-semibold">{result.name}</h3>
-                  <p className="text-orange-500">${parseFloat(result.precio_final).toFixed(2)}</p>
+                  <p className="text-orange-500 font-semibold">{formatCurrency(Number(result.precio_final))}</p>
                 </div>
               </div>
             );
