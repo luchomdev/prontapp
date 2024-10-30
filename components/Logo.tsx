@@ -13,15 +13,33 @@ const Logo: React.FC = () => {
   useEffect(() => {
     const fetchLogoUrl = async () => {
       try {
+        console.log('Fetching from:', `${process.env.NEXT_PUBLIC_API_URL}/logo/url`);
+
         const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/logo/url`);
+
+        console.log('Response status:', response.status);
+        console.log('Response headers:', Object.fromEntries(response.headers));
+
         if (!response.ok) {
-          throw new Error('Failed to fetch logo URL');
+          const errorData = await response.json().catch(e => ({ message: 'No error details available' }));
+          console.error('Response error details:', errorData);
+          throw new Error(`HTTP error! status: ${response.status}, message: ${errorData.message}`);
         }
+
         const data = await response.json();
+        console.log('Response data:', data);
         setLogoUrl(data.logoUrl);
       } catch (err) {
         setError('Error loading logo');
-        console.error('Error fetching logo URL:', err);
+        console.error('Error details:', {
+          message: err instanceof Error ? err.message : 'Unknown error',
+          stack: err instanceof Error ? err.stack : undefined,
+          name: err instanceof Error ? err.name : 'Unknown'
+        });
+
+        if (err instanceof TypeError) {
+          console.error('Network error - possible CORS issue');
+        }
       } finally {
         setIsLoading(false);
       }
