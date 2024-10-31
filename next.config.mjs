@@ -7,6 +7,10 @@ const nextConfig = {
             hostname: 's3.us-east-2.amazonaws.com'
           },
           {
+            protocol: 'https',
+            hostname: 'api.prontapp.co'
+          },
+          {
             protocol: 'http',
             hostname: 'localhost'
           },
