@@ -15,7 +15,7 @@ const Logo: React.FC = () => {
     const loadLogo = async () => {
       try {
         const url = await getLogoUrl();
-        console.log('Logo URL from server action:', url);
+        //console.log('Logo URL from server action:', url);
         setLogoUrl(url);
       } catch (err) {
         setError('Error loading logo');

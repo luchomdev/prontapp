@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react';
 import { useStore } from '@/stores/cartStore';
+import { checkAuth } from '@/app/actions/auth';
 
 export function AuthInitializer() {
   const { setAuthenticated, setUser, setLoading } = useStore((state) => ({
@@ -14,13 +15,10 @@ export function AuthInitializer() {
     async function initializeAuth() {
       setLoading(true);
       try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users/check-auth`, {
-          credentials: 'include',
-        });
-        const data = await response.json();
+        const { isAuthenticated, user } = await checkAuth();
         
-        setAuthenticated(data.isAuthenticated);
-        setUser(data.user);
+        setAuthenticated(isAuthenticated);
+        setUser(user);
       } catch (error) {
         console.error('Error checking authentication:', error);
         setAuthenticated(false);
