@@ -5,6 +5,7 @@ import { useStore } from '@/stores/cartStore';
 import { validateEmail } from '@/lib/validator'
 import { useRouter } from "next/navigation"
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
+import { signIn } from '@/app/actions/signin';
 
 interface SigninFormProps {
   onSuccess?: () => void;
@@ -17,6 +18,7 @@ const SigninForm: React.FC<SigninFormProps> = ({ onSuccess }) => {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  
   const { setUser, setAuthenticated, setShippingAddress } = useStore((state) => ({
     setUser: state.setUser,
     setAuthenticated: state.setAuthenticated,
@@ -40,39 +42,30 @@ const SigninForm: React.FC<SigninFormProps> = ({ onSuccess }) => {
     setIsLoading(true);
 
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users/signin`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email, password }),
-      });
+      const result = await signIn(email, password);
 
-      if (!response.ok) {
-        throw new Error('Authentication failed');
+      if (!result.success || !result.user) {
+        setError(result.error || 'Error al iniciar sesión');
+        return;
       }
 
-      const data = await response.json();
-      setUser(data.user);
+      setUser(result.user);
       setAuthenticated(true);
       
-      // Asignar la dirección por defecto al estado global
-      if (data.user.defaultAddress) {
-        const addressParts = data.user.defaultAddress.address.split('~');
-        const address = addressParts[0].trim();
-        const addressComplement = addressParts[1] ? addressParts[1].trim() : '';
+      if (result.user.defaultAddress) {
+        const [address, city_id, cityName] = result.user.defaultAddress.split('|~');
+        const [baseAddress, complement] = address.split('~');
         
         setShippingAddress({
-          city_id: data.user.defaultAddress.city_id,
-          cityName: data.user.defaultAddress.cityName,
-          address: address,
-          addressComplement: addressComplement
+          city_id: parseInt(city_id),
+          cityName: cityName,
+          address: baseAddress.trim(),
+          addressComplement: complement ? complement.trim() : ''
         });
       }
 
       // Redirección basada en el rol del usuario
-      if (data.user.role === 'admin') {
+      if (result.user.role === 'admin') {
         router.replace("/console/dashboard");
       } else {
         router.replace("/");
@@ -80,7 +73,7 @@ const SigninForm: React.FC<SigninFormProps> = ({ onSuccess }) => {
 
       if (onSuccess) onSuccess();
     } catch (error) {
-      setError('Credenciales inválidas. Por favor, intente de nuevo.');
+      setError('Error al intentar iniciar sesión. Por favor, intente de nuevo.');
     } finally {
       setIsLoading(false);
     }
