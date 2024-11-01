@@ -21,6 +21,16 @@ interface UserData {
     customerInfo: CustomerInfo;
 }
 
+interface UpdateProfileData {
+    identification: string;
+    address: string;
+    name: string;
+    lastName: string;
+    email: string;
+    city_id: string;
+    phone: string;
+  }
+
 export async function fetchUserDetails(userId: string): Promise<UserData | null> {
     try {
         const response = await fetch(`${process.env.API_BASE_URL}/users/${userId}`, {
@@ -41,3 +51,34 @@ export async function fetchUserDetails(userId: string): Promise<UserData | null>
         return null;
     }
 }
+
+
+  
+  export async function updateUserProfile(data: UpdateProfileData): Promise<{ success: boolean; message: string }> {
+    try {
+      const response = await fetch(`${process.env.API_BASE_URL}/users/profile`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Cookie': cookies().toString() || ''
+        },
+        credentials: 'include',
+        body: JSON.stringify(data)
+      });
+  
+      if (!response.ok) {
+        throw new Error('Failed to update user information');
+      }
+  
+      return {
+        success: true,
+        message: 'Los datos se actualizaron satisfactoriamente'
+      };
+    } catch (error) {
+      console.error('Error in updateUserProfile server action:', error);
+      return {
+        success: false,
+        message: 'Error al actualizar la información del usuario'
+      };
+    }
+  }
