@@ -4,6 +4,8 @@ import { FaTimes, FaSearch } from 'react-icons/fa';
 import Image from 'next/image';
 import { parseProductImages } from '@/lib/dataLayer';
 import { formatCurrency } from '@/lib/Helpers';
+import { searchProducts } from '@/app/actions/products';
+
 
 interface SearchResult {
   id: string;
@@ -18,6 +20,7 @@ interface ModalSearchMiniProps {
   onProductClick: (productId: string) => void;
 }
 
+
 const ModalSearchMini: React.FC<ModalSearchMiniProps> = ({ isOpen, onClose, onProductClick }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
@@ -25,7 +28,7 @@ const ModalSearchMini: React.FC<ModalSearchMiniProps> = ({ isOpen, onClose, onPr
   const inputRef = useRef<HTMLInputElement>(null);
   const debounceRef = useRef<NodeJS.Timeout>();
 
-  const searchProducts = useCallback(async (term: string) => {
+  const handleSearch = useCallback(async (term: string) => {
     if (term.trim() === '') {
       setSearchResults([]);
       return;
@@ -33,15 +36,8 @@ const ModalSearchMini: React.FC<ModalSearchMiniProps> = ({ isOpen, onClose, onPr
 
     setIsLoading(true);
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/products/public?search=${encodeURIComponent(term)}`);
-      if (!response.ok) throw new Error('Failed to fetch');
-      const data = await response.json();
-      setSearchResults(data.products.map((product: any) => ({
-        id: product.id,
-        name: product.name,
-        precio_final: product.precio_final,
-        images: product.images
-      })));
+      const results = await searchProducts(term);
+      setSearchResults(results);
     } catch (error) {
       console.error('Error fetching search results:', error);
       setSearchResults([]);
@@ -50,14 +46,15 @@ const ModalSearchMini: React.FC<ModalSearchMiniProps> = ({ isOpen, onClose, onPr
     }
   }, []);
 
+
   const debouncedSearch = useCallback((term: string) => {
     if (debounceRef.current) {
       clearTimeout(debounceRef.current);
     }
     debounceRef.current = setTimeout(() => {
-      searchProducts(term);
+      handleSearch(term);
     }, 300);
-  }, [searchProducts]);
+  }, [handleSearch]);
 
   useEffect(() => {
     if (isOpen && inputRef.current) {
@@ -76,7 +73,6 @@ const ModalSearchMini: React.FC<ModalSearchMiniProps> = ({ isOpen, onClose, onPr
 
   const handleProductClick = (productId: string) => {
     onProductClick(productId);
-    // No reseteamos la búsqueda aquí para mantener el contexto
   };
 
   if (!isOpen) return null;
