@@ -1,9 +1,14 @@
 "use client"
 import React, { useState, useEffect, useCallback } from 'react';
 import UserInfoForm from '@/components/panel/UserInfoForm';
+import { fetchUserDetails } from '@/app/actions/users';
 
-interface BasicInformationProps {
-  user: any | null;
+interface CustomerInfo {
+  identification: string | null;
+  phone: string | null;
+  address: string | null;
+  cityId: number | null;
+  cityText: string | null;
 }
 
 interface UserData {
@@ -14,13 +19,11 @@ interface UserData {
   createdAt: string;
   userRole: string;
   isActive: boolean;
-  customerInfo: {
-    identification: string | null;
-    phone: string | null;
-    address: string | null;
-    cityId: number | null;
-    cityText: string | null;
-  };
+  customerInfo: CustomerInfo;
+}
+
+interface BasicInformationProps {
+  user: any | null;
 }
 
 const BasicInformation: React.FC<BasicInformationProps> = ({ user }) => {
@@ -36,12 +39,10 @@ const BasicInformation: React.FC<BasicInformationProps> = ({ user }) => {
 
     setIsLoading(true);
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users/${user.id}`, {
-        credentials: 'include'
-      });
-      if (!response.ok) throw new Error('Failed to fetch user data');
-      const data = await response.json();
-      setUserData(data);
+      const data = await fetchUserDetails(user.id);
+      if (data) {
+        setUserData(data);
+      }
     } catch (error) {
       console.error('Error fetching user data:', error);
     } finally {
@@ -79,7 +80,11 @@ const BasicInformation: React.FC<BasicInformationProps> = ({ user }) => {
         </button>
       </div>
       {isEditing ? (
-        <UserInfoForm user={userData} onCancel={() => setIsEditing(false)} onUpdateSuccess={handleUpdateSuccess} />
+        <UserInfoForm 
+          user={userData} 
+          onCancel={() => setIsEditing(false)} 
+          onUpdateSuccess={handleUpdateSuccess} 
+        />
       ) : (
         <div className="space-y-2">
           <p><strong>Identificación:</strong> {userData.customerInfo.identification || 'No disponible'}</p>

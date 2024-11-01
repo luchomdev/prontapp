@@ -6,6 +6,7 @@ import BasicInformation from '@/components/panel/BasicInformation';
 import ChangePasswordSection from '@/components/panel/ChangePasswordSection';
 import AccountPageSkeleton from '@/components/panel/skeletons/SkeletonAccountPage';
 import { useStore } from '@/stores/cartStore';
+import { checkAuth } from '@/app/actions/auth';
 
 const AccountPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
@@ -16,16 +17,15 @@ const AccountPage: React.FC = () => {
   }));
 
   useEffect(() => {
-    const checkAuth = async () => {
+    const verifyAuth = async () => {
       try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users/check-auth`, {
-          credentials: 'include'
-        });
-        if (!response.ok) {
+        const result = await checkAuth();
+        
+        if (!result.isAuthenticated || !result.user) {
           throw new Error('Not authenticated');
         }
-        const userData = await response.json();
-        setUser(userData.user);
+
+        setUser(result.user);
         setIsLoading(false);
       } catch (error) {
         console.error('Authentication error:', error);
@@ -33,7 +33,7 @@ const AccountPage: React.FC = () => {
       }
     };
 
-    checkAuth();
+    verifyAuth();
   }, [router, setUser]);
 
   if (isLoading) {
