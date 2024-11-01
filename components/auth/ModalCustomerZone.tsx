@@ -4,6 +4,7 @@ import Link from 'next/link';
 import {useRouter} from "next/navigation"
 import { useStore } from '@/stores/cartStore';
 import { FaTimes, FaUser, FaShoppingBag, FaMapMarkerAlt, FaBell, FaTruck, FaRobot, FaSignOutAlt } from 'react-icons/fa';
+import { signOut } from '@/app/actions/auth';
 
 interface ModalCustomerZoneProps {
   anchorEl: HTMLElement | null;
@@ -73,13 +74,10 @@ const ModalCustomerZone: React.FC<ModalCustomerZoneProps> = ({ anchorEl, onClose
   const handleLogout = async () => {
     setIsLoggingOut(true);
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users/signout`, {
-        method: 'POST',
-        credentials: 'include',
-      });
+      const result = await signOut();
       
-      if (!response.ok) {
-        throw new Error('Failed to sign out');
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to sign out');
       }
       
       // Si la respuesta es satisfactoria, procedemos con el logout en el cliente
