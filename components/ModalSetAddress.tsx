@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { FaTimes } from 'react-icons/fa';
 import { useStore } from '@/stores/cartStore';
+import { searchCities } from '@/app/actions/locations';
 
 interface City {
     city_id: number;
@@ -20,6 +21,7 @@ const ModalSetAddress: React.FC = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [isSearching, setIsSearching] = useState(false);
     const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
     const {
         isSetAddressModalOpen,
         closeSetAddressModal,
@@ -37,8 +39,17 @@ const ModalSetAddress: React.FC = () => {
             if (searchTimeoutRef.current) {
                 clearTimeout(searchTimeoutRef.current);
             }
-            searchTimeoutRef.current = setTimeout(() => {
-                searchCities(citySearch);
+            searchTimeoutRef.current = setTimeout(async () => {
+                setIsLoading(true);
+                try {
+                    const cities = await searchCities(citySearch);
+                    setCitySuggestions(cities);
+                } catch (error) {
+                    console.error('Error searching cities:', error);
+                    setCitySuggestions([]);
+                } finally {
+                    setIsLoading(false);
+                }
             }, 300);
         } else {
             setCitySuggestions([]);
@@ -50,23 +61,6 @@ const ModalSetAddress: React.FC = () => {
             }
         };
     }, [citySearch, isSearching]);
-
-    const searchCities = async (search: string) => {
-        setIsLoading(true);
-        try {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/locations/search-cities?search=${encodeURIComponent(search)}`);
-            if (!response.ok) {
-                throw new Error('Failed to fetch cities');
-            }
-            const data: City[] = await response.json();
-            setCitySuggestions(data);
-        } catch (error) {
-            console.error('Error searching cities:', error);
-            setCitySuggestions([]);
-        } finally {
-            setIsLoading(false);
-        }
-    };
 
     const handleCitySelect = (city: City) => {
         setSelectedCity(city);
@@ -93,9 +87,8 @@ const ModalSetAddress: React.FC = () => {
             closeSetAddressModal();
         }
     };
-    //console.log('ModalSetAddress rendering, isOpen:', isSetAddressModalOpen);
+
     if (!isSetAddressModalOpen) {
-        // console.log('ModalSetAddress not rendering because isSetAddressModalOpen is false');
         return null;
     }
 
