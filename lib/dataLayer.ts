@@ -216,7 +216,7 @@ export function parseMeasures(measures: string | { [key: string]: string }): { [
 
 export const getCategoriesPublic = cache(async (): Promise<Category[]> => {
     try {
-        const response = await fetch(`${API_BASE_URL}/categories/public`, { next: { revalidate: 3600 } });
+        const response = await fetch(`${API_BASE_URL}/categories/public`, { next: { revalidate: 0 } });
         if (!response.ok) {
             throw new Error('Failed to fetch categories');
         }
@@ -237,7 +237,7 @@ export const getProductsPublic = cache(async (params: ProductQueryParams = {}): 
         });
 
         const url = `${API_BASE_URL}/products/public?${queryParams.toString()}`;
-        const response = await fetch(url, { next: { revalidate: 60 } });
+        const response = await fetch(url, { next: { revalidate: 0 } });
         if (!response.ok) {
             throw new Error('Failed to fetch products');
         }
@@ -270,7 +270,7 @@ export const getProductsPublic = cache(async (params: ProductQueryParams = {}): 
 
 export const getProductsByCategoriesHome = cache(async (): Promise<HomeCategoriesResponse> => {
     try {
-        const response = await fetch(`${API_BASE_URL}/categories/home`, { next: { revalidate: 3600 } });
+        const response = await fetch(`${API_BASE_URL}/categories/home`, { next: { revalidate: 0 } });
         if (!response.ok) {
             throw new Error('Failed to fetch home categories and products');
         }
@@ -299,7 +299,7 @@ export const getProductsByCategoriesHome = cache(async (): Promise<HomeCategorie
 
 export const getPublicHighlightCategories = cache(async (): Promise<HighlightCategory[]> => {
     try {
-        const response = await fetch(`${API_BASE_URL}/categories/highlight`, { next: { revalidate: 3600 } });
+        const response = await fetch(`${API_BASE_URL}/categories/highlight`, { next: { revalidate: 0 } });
         if (!response.ok) {
             throw new Error('Failed to fetch highlight categories');
         }
@@ -318,7 +318,7 @@ export const getPublicHighlightCategories = cache(async (): Promise<HighlightCat
 
 export const getProductById = cache(async (id: string): Promise<ProductDetail> => {
     try {
-        const response = await fetch(`${API_BASE_URL}/products/public/${id}`, { next: { revalidate: 60 } });
+        const response = await fetch(`${API_BASE_URL}/products/public/${id}`, { next: { revalidate: 0 } });
         if (!response.ok) {
             throw new Error('Failed to fetch product details');
         }
@@ -348,7 +348,7 @@ export const getProductById = cache(async (id: string): Promise<ProductDetail> =
 
 export const getProductReviews = cache(async (productId: string): Promise<ProductReviews[]> => {
     try {
-        const response = await fetch(`${API_BASE_URL}/products/public/${productId}/reviews`, { next: { revalidate: 3600 } });
+        const response = await fetch(`${API_BASE_URL}/products/public/${productId}/reviews`, { next: { revalidate: 0 } });
         if (!response.ok) {
             throw new Error('Failed to fetch product reviews');
         }
@@ -363,7 +363,7 @@ export const getProductReviews = cache(async (productId: string): Promise<Produc
 // Banners module
 export const getSliderImages = cache(async (): Promise<BannerImage[]> => {
     try {
-        const response = await fetch(`${API_BASE_URL}/banners/active?platform=web`, { next: { revalidate: 3600 } });
+        const response = await fetch(`${API_BASE_URL}/banners/active?platform=web`, { next: { revalidate: 0 } });
         if (!response.ok) {
             throw new Error('Failed to fetch banner images');
         }
@@ -382,7 +382,7 @@ export const getSliderImages = cache(async (): Promise<BannerImage[]> => {
 
 export const getQRCode = cache(async (): Promise<string> => {
     try {
-        const response = await fetch(`${API_BASE_URL}/app-download/qr-code`, { next: { revalidate: 86400 } }); // Cache por 24 horas
+        const response = await fetch(`${API_BASE_URL}/app-download/qr-code`, { next: { revalidate: 0 } }); // Cache por 24 horas
         if (!response.ok) {
             throw new Error('Failed to fetch QR code');
         }
@@ -409,7 +409,7 @@ export const getPublicConfig = cache(async (vars: string): Promise<ConfigRespons
         const response = await fetch(
             `${API_BASE_URL}/config/public?${queryParams.toString()}`, 
             { 
-                next: { revalidate: 3600 }, // Cache por 1 hora
+                next: { revalidate: 0 }, // Cache por 1 hora
                 headers: {
                     'Content-Type': 'application/json',
                 }
@@ -442,7 +442,7 @@ export const getTrendyProducts = cache(async (params: ProductListQueryParams = {
         });
 
         const url = `${API_BASE_URL}/products/trendy?${queryParams.toString()}`;
-        const response = await fetch(url, { next: { revalidate: 3600 } });
+        const response = await fetch(url, { next: { revalidate: 0 } });
         
         if (!response.ok) {
             throw new Error('Failed to fetch trendy products');
@@ -489,7 +489,7 @@ export const getDiscountProducts = cache(async (params: ProductListQueryParams =
         });
 
         const url = `${API_BASE_URL}/products/public/discount?${queryParams.toString()}`;
-        const response = await fetch(url, { next: { revalidate: 3600 } });
+        const response = await fetch(url, { next: { revalidate: 0 } });
         
         if (!response.ok) {
             throw new Error('Failed to fetch discount products');
@@ -538,7 +538,7 @@ export const getBestSellerProducts = cache(async (params: ProductListQueryParams
         const response = await fetch(
             `${API_BASE_URL}/products/public/bestseller?${queryParams.toString()}`,
             { 
-                next: { revalidate: 3600 },
+                next: { revalidate: 0 },
                 headers: {
                     'Content-Type': 'application/json',
                 }
