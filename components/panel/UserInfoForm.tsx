@@ -1,7 +1,13 @@
 "use client"
 import React, { useState, useEffect, useRef } from 'react';
 import Toaster from '@/components/Toaster';
+import { searchCities } from '@/app/actions/locations';
+import { updateUserProfile } from '@/app/actions/users';
 
+interface City {
+    city_id: number;
+    name: string;
+}
 interface UserInfoFormProps {
     user: any;
     onCancel: () => void;
@@ -32,7 +38,7 @@ const UserInfoForm: React.FC<UserInfoFormProps> = ({ user, onCancel, onUpdateSuc
         phone: user.customerInfo?.phone ? user.customerInfo.phone.slice(2) : '',
         cityText: user.customerInfo?.cityText || '',
     });
-    const [cities, setCities] = useState([]);
+    const [cities, setCities] = useState<City[]>([]);
     const [isSearching, setIsSearching] = useState(false);
     const [isUpdating, setIsUpdating] = useState(false);
     const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -45,15 +51,12 @@ const UserInfoForm: React.FC<UserInfoFormProps> = ({ user, onCancel, onUpdateSuc
         };
     }, []);
 
-    const searchCities = async (search: string) => {
+
+    const handleCitySearch = async (search: string) => {
         if (search.length < 3) return;
         try {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/locations/search-cities?search=${encodeURIComponent(search)}`, {
-                credentials: 'include'
-            });
-            if (!response.ok) throw new Error('Failed to fetch cities');
-            const data = await response.json();
-            setCities(data);
+            const citiesData = await searchCities(search);
+            setCities(citiesData);
         } catch (error) {
             console.error('Error searching cities:', error);
         } finally {
@@ -64,7 +67,6 @@ const UserInfoForm: React.FC<UserInfoFormProps> = ({ user, onCancel, onUpdateSuc
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
         if (name === 'phone') {
-            // Solo permite dígitos y limita la longitud a 10 caracteres
             const phoneValue = value.replace(/\D/g, '').slice(0, 10);
             setFormData({ ...formData, [name]: phoneValue });
         } else if (name === 'cityText') {
@@ -74,7 +76,7 @@ const UserInfoForm: React.FC<UserInfoFormProps> = ({ user, onCancel, onUpdateSuc
                 clearTimeout(searchTimeoutRef.current);
             }
             searchTimeoutRef.current = setTimeout(() => {
-                searchCities(value);
+                handleCitySearch(value);
             }, 300);
         } else {
             setFormData({ ...formData, [name]: value });
@@ -85,29 +87,24 @@ const UserInfoForm: React.FC<UserInfoFormProps> = ({ user, onCancel, onUpdateSuc
         e.preventDefault();
         setIsUpdating(true);
         try {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users/profile`, {
-                method: 'PUT',
-                credentials: 'include',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    identification: formData.identification,
-                    address: formData.address,
-                    name: formData.name,
-                    lastName: formData.lastName,
-                    email: formData.email,
-                    city_id: formData.city_id,
-                    phone: formData.phone,
-                }),
+            const result = await updateUserProfile({
+                identification: formData.identification,
+                address: formData.address,
+                name: formData.name,
+                lastName: formData.lastName,
+                email: formData.email,
+                city_id: formData.city_id,
+                phone: formData.phone,
             });
-            if (!response.ok) throw new Error('Failed to update user information');
-            setToastMessage('Los datos se actualizaron satisfactoriamente');
-            setToastType('success');
-            // Esperar 2 segundos antes de cerrar el formulario y actualizar los datos
-            setTimeout(() => {
-                onUpdateSuccess();
-            }, 2000);
+
+            setToastMessage(result.message);
+            setToastType(result.success ? 'success' : 'error');
+
+            if (result.success) {
+                setTimeout(() => {
+                    onUpdateSuccess();
+                }, 2000);
+            }
         } catch (error) {
             console.error('Error updating user information:', error);
             setToastMessage('Error al actualizar la información del usuario');
