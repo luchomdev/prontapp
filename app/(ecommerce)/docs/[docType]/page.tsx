@@ -1,8 +1,10 @@
-"use client"
+ "use client"
 
 import { useParams } from "next/navigation"
 import { useState, useEffect } from 'react'
 import MarkdownRenderer from '@/components/MarkdownRenderer'
+import DocumentSkeleton from '@/components/skeletons/DocumentSkeleton'
+import { fetchDocContent } from '@/app/actions/config'
 
 export default function DocsTypePage() {
     const params = useParams<{docType: string}>()
@@ -10,28 +12,28 @@ export default function DocsTypePage() {
     const [isLoading, setIsLoading] = useState<boolean>(true)
 
     useEffect(() => {
-        const fetchContent = async () => {
+        const loadContent = async () => {
             setIsLoading(true)
             try {
-                const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/config/public?vars=${params.docType}`)
-                if (!response.ok) {
-                    throw new Error('Failed to fetch content')
-                }
-                const data = await response.json()
-                setContent(data[params.docType] || '')
+                const docContent = await fetchDocContent(params.docType)
+                setContent(docContent)
             } catch (error) {
-                console.error('Error fetching content:', error)
+                console.error('Error loading content:', error)
                 setContent('Error loading content')
             } finally {
                 setIsLoading(false)
             }
         }
 
-        fetchContent()
+        loadContent()
     }, [params.docType])
 
     if (isLoading) {
-        return <div>Cargando contenido ...</div>
+        return (
+            <div className="container mx-auto px-4 py-8">
+                <DocumentSkeleton />
+            </div>
+        )
     }
 
     return (
