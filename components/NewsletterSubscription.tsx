@@ -1,6 +1,7 @@
 "use client"
 import React, { useState } from 'react';
 import { FaEnvelope, FaPaperPlane } from 'react-icons/fa';
+import { subscribeToNewsletter } from '@/app/actions/newsletter';
 
 const NewsletterSubscription: React.FC = () => {
     const [email, setEmail] = useState('');
@@ -18,25 +19,12 @@ const NewsletterSubscription: React.FC = () => {
 
         setIsSubmitting(true);
         try {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/newsletter/subscribe`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    email,
-                    first_name: "",
-                    last_name: ""
-                }),
-            });
-
-            if (!response.ok) {
-                throw new Error('Subscription failed');
+            const result = await subscribeToNewsletter(email);
+            
+            setMessage(result.message);
+            if (result.success) {
+                setEmail('');
             }
-
-            const data = await response.json();
-            setMessage('Gracias por el registro a nuestro boletín!');
-            setEmail('');
 
             setTimeout(() => {
                 setMessage('');
@@ -45,6 +33,9 @@ const NewsletterSubscription: React.FC = () => {
         } catch (error) {
             console.error('Error:', error);
             setMessage('Hubo un error. Por favor, intenta de nuevo.');
+            setTimeout(() => {
+                setMessage('');
+            }, 2000);
         } finally {
             setIsSubmitting(false);
         }
