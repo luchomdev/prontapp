@@ -6,8 +6,7 @@ import PageTitle from './PageTitle';
 import AddressList from './AddressList';
 import AddressForm from './AddressForm';
 import AddressManagementSkeleton from '@/components/panel/skeletons/SkeletonAddressManagement';
-
-
+import { fetchAddresses, addNewAddress, setDefaultAddress, removeAddress } from '@/app/actions/addresses';
 
 const AddressManagement: React.FC = () => {
   const [showForm, setShowForm] = useState(false);
@@ -19,8 +18,8 @@ const AddressManagement: React.FC = () => {
     addAddress, 
     deleteAddress, 
     setShippingAddress 
-  } = useStore((state)=>({
-    addresses:state.addresses,
+  } = useStore((state) => ({
+    addresses: state.addresses,
     setAddresses: state.setAddresses,
     addAddress: state.addAddress,
     deleteAddress: state.deleteAddress,
@@ -29,14 +28,10 @@ const AddressManagement: React.FC = () => {
   const [defaultAddressId, setDefaultAddressId] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchAddresses = async () => {
+    const loadAddresses = async () => {
       setIsLoading(true);
       try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users/addresses`, {
-          credentials: 'include',
-        });
-        if (!response.ok) throw new Error('Failed to fetch addresses');
-        const addressesData = await response.json();
+        const addressesData = await fetchAddresses();
         setAddresses(addressesData);
         const defaultAddress = addressesData.find((addr: Address) => addr.default_address);
         if (defaultAddress) {
@@ -48,7 +43,7 @@ const AddressManagement: React.FC = () => {
         setIsLoading(false);
       }
     };
-    fetchAddresses();
+    loadAddresses();
   }, [setAddresses]);
 
   const handleAddAddress = () => {
@@ -57,41 +52,41 @@ const AddressManagement: React.FC = () => {
 
   const handleSaveAddress = async (newAddress: Omit<Address, 'id'>) => {
     try {
-      await addAddress(newAddress);
+      const resNewAddress = await addNewAddress(newAddress);
+      if(resNewAddress) {
+        await addAddress(resNewAddress);
+      }
       setShowForm(false);
     } catch (error) {
       console.error('Error saving address:', error);
-      // Aquí podrías mostrar un mensaje de error al usuario
     }
   };
 
   const handleDeleteAddress = async (id: string) => {
     try {
-      await deleteAddress(id);
+      const success = await removeAddress(id);
+      if (success) {
+        await deleteAddress(id);
+      }
     } catch (error) {
       console.error('Error deleting address:', error);
-      // Aquí podrías mostrar un mensaje de error al usuario
     }
   };
 
   const handleSelectAddress = async (address: Address) => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users/address/${address.id}/set-default`, {
-        method: 'PATCH',
-        credentials: 'include',
-      });
-      if (!response.ok) throw new Error('Failed to set default address');
-      
-      setShippingAddress({
-        city_id: address.city_id,
-        cityName: address.cityName,
-        address: address.address,
-        addressComplement: address.addressComplement,
-      });
-      setDefaultAddressId(address.id);
+      const success = await setDefaultAddress(address.id);
+      if (success) {
+        setShippingAddress({
+          city_id: address.city_id,
+          cityName: address.cityName,
+          address: address.address,
+          addressComplement: address.addressComplement,
+        });
+        setDefaultAddressId(address.id);
+      }
     } catch (error) {
       console.error('Error setting default address:', error);
-      // Aquí podrías mostrar un mensaje de error al usuario
     }
   };
 

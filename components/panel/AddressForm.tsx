@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { FaTimes } from 'react-icons/fa';
+import { searchCities } from '@/app/actions/locations';
 
 interface City {
   city_id: number;
@@ -27,8 +28,17 @@ const AddressForm: React.FC<AddressFormProps> = ({ onSave, onCancel }) => {
       if (searchTimeoutRef.current) {
         clearTimeout(searchTimeoutRef.current);
       }
-      searchTimeoutRef.current = setTimeout(() => {
-        searchCities(citySearch);
+      searchTimeoutRef.current = setTimeout(async () => {
+        setIsLoading(true);
+        try {
+          const cities = await searchCities(citySearch);
+          setCitySuggestions(cities);
+        } catch (error) {
+          console.error('Error searching cities:', error);
+          setCitySuggestions([]);
+        } finally {
+          setIsLoading(false);
+        }
       }, 300);
     } else {
       setCitySuggestions([]);
@@ -40,25 +50,6 @@ const AddressForm: React.FC<AddressFormProps> = ({ onSave, onCancel }) => {
       }
     };
   }, [citySearch, isSearching]);
-
-  const searchCities = async (search: string) => {
-    setIsLoading(true);
-    try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/locations/search-cities?search=${encodeURIComponent(search)}`, {
-        credentials: 'include'
-      });
-      if (!response.ok) {
-        throw new Error('Failed to fetch cities');
-      }
-      const data: City[] = await response.json();
-      setCitySuggestions(data);
-    } catch (error) {
-      console.error('Error searching cities:', error);
-      setCitySuggestions([]);
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const handleCitySelect = (city: City) => {
     setSelectedCity(city);
@@ -79,7 +70,7 @@ const AddressForm: React.FC<AddressFormProps> = ({ onSave, onCancel }) => {
       onSave({
         city_id: selectedCity.city_id,
         cityName: selectedCity.name,
-        address: `${address} ${addressComplement ? '~' + addressComplement : '~' }`,
+        address: `${address} ${addressComplement ? '~' + addressComplement : '~'}`,
         addressComplement,
         phone,
       });
