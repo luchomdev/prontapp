@@ -122,7 +122,7 @@ interface StoreActions {
   setSubtotalsValue: (value: number) => void;
   setPayment: (payment: 0 | 1) => void;
   setTmpOrderId: (id: string | null) => void;
-  addAddress: (address: Omit<Address, 'id'>) => Promise<void>;
+  addAddress: (address: Address) => Promise<void>;
   deleteAddress: (id: string) => Promise<void>;
   setAddresses: (addresses: Address[]) => void;
   toggleSidebar: () => void;
@@ -315,19 +315,7 @@ export const useStore = create<StoreState & StoreActions>()(
       addresses: [],
       addAddress: async (address) => {
         try {
-          const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users/address`, {
-            method: 'POST',
-            credentials: 'include',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              city_id: address.city_id,
-              address: address.address,
-              phone: address.phone,
-            }),
-          });
-          if (!response.ok) throw new Error('Failed to add address');
-          const newAddress = await response.json();
-          set((state) => ({ addresses: [...state.addresses, newAddress] }));
+          set((state) => ({ addresses: [...state.addresses, address] }));
         } catch (error) {
           console.error('Error adding address:', error);
           throw error;
@@ -335,11 +323,6 @@ export const useStore = create<StoreState & StoreActions>()(
       },
       deleteAddress: async (id) => {
         try {
-          const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users/address/${id}`, {
-            method: 'DELETE',
-            credentials: 'include',
-          });
-          if (!response.ok) throw new Error('Failed to delete address');
           set((state) => ({ addresses: state.addresses.filter(addr => addr.id !== id) }));
         } catch (error) {
           console.error('Error deleting address:', error);
@@ -373,8 +356,6 @@ export const useStore = create<StoreState & StoreActions>()(
         payment: 0,
         tmp_order_id: null,
         productsToGroup: [],
-        // Note: We're not resetting isAuthenticated, user, addresses, and isSidebarCollapsed
-        // as these might need to persist across sessions or be handled separately
       })),
     }),
     {
