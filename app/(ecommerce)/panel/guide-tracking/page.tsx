@@ -4,9 +4,20 @@ import PageTitle from '@/components/panel/PageTitle';
 import GuideFilter from '@/components/panel/GuideFilter';
 import ShippingInfo from '@/components/panel/ShippingInfo';
 import ShippingInfoSkeleton from '@/components/panel/skeletons/SkeletonShippingInfo';
+import { fetchOrderGuide } from '@/app/actions/orders';
+
+interface GuideHistory {
+  created_at: string;
+  description: string;
+}
+
+interface GuideData {
+  guide_state_description: string;
+  guide_histories: GuideHistory[];
+}
 
 const GuideTrackingPage: React.FC = () => {
-  const [guideData, setGuideData] = useState<any | null>(null);
+  const [guideData, setGuideData] = useState<GuideData | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -14,13 +25,10 @@ const GuideTrackingPage: React.FC = () => {
     setIsLoading(true);
     setError(null);
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/orders?order_id=${orderId}`, {
-        credentials: 'include'
-      });
-      if (!response.ok) throw new Error('Failed to fetch order data');
-      const data = await response.json();
-      if (data.orders && data.orders.length > 0) {
-        setGuideData(data.orders[0]);
+      const orderData = await fetchOrderGuide(orderId);
+      
+      if (orderData) {
+        setGuideData(orderData);
       } else {
         setError('No hay datos de guía para el pedido');
       }
