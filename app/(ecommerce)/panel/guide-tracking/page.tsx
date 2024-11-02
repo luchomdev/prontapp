@@ -1,4 +1,4 @@
-"use client"
+ "use client"
 import React, { useState } from 'react';
 import PageTitle from '@/components/panel/PageTitle';
 import GuideFilter from '@/components/panel/GuideFilter';
@@ -24,16 +24,22 @@ const GuideTrackingPage: React.FC = () => {
   const handleSearch = async (orderId: string) => {
     setIsLoading(true);
     setError(null);
+    // Limpiamos el guideData al inicio de cada búsqueda
+    setGuideData(null);
+    
     try {
       const orderData = await fetchOrderGuide(orderId);
       
       if (orderData) {
         setGuideData(orderData);
+        setError(null); // Aseguramos que no haya mensaje de error si hay datos
       } else {
+        setGuideData(null); // Aseguramos que no haya datos anteriores
         setError('No hay datos de guía para el pedido');
       }
     } catch (error) {
       console.error('Error fetching guide data:', error);
+      setGuideData(null); // Limpiamos los datos en caso de error
       setError('Error al buscar la guía');
     } finally {
       setIsLoading(false);
@@ -45,7 +51,7 @@ const GuideTrackingPage: React.FC = () => {
       <PageTitle title="Seguimiento de guías" />
       <GuideFilter onSearch={handleSearch} />
       {isLoading && <ShippingInfoSkeleton />}
-      {!isLoading && guideData && (
+      {!isLoading && !error && guideData && (
         <ShippingInfo
           guide_state_description={guideData.guide_state_description}
           guide_histories={guideData.guide_histories}
@@ -53,7 +59,6 @@ const GuideTrackingPage: React.FC = () => {
       )}
       {!isLoading && error && (
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
-          <strong className="font-bold">Error: </strong>
           <span className="block sm:inline">{error}</span>
         </div>
       )}
