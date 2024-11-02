@@ -82,3 +82,32 @@ export async function fetchUserDetails(userId: string): Promise<UserData | null>
       };
     }
   }
+
+  export async function changePassword(userId: string, newPassword: string): Promise<{ success: boolean; message: string }> {
+    try {
+        const response = await fetch(`${process.env.API_BASE_URL}/users/reset-auth-password`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Cookie': cookies().toString() || ''
+            },
+            credentials: 'include',
+            body: JSON.stringify({ newPass: newPassword, user_id: userId }),
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to change password');
+        }
+
+        return {
+            success: true,
+            message: 'Contraseña cambiada con éxito'
+        };
+    } catch (error) {
+        console.error('Error in changePassword server action:', error);
+        return {
+            success: false,
+            message: 'Error al cambiar la contraseña'
+        };
+    }
+}

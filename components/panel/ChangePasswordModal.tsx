@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useStore } from '@/stores/cartStore';
 import Toaster from '@/components/Toaster';
+import { changePassword } from '@/app/actions/users';
 
 interface ChangePasswordModalProps {
   onClose: () => void;
@@ -27,33 +28,34 @@ const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({ onClose, user
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
     if (newPassword !== confirmPassword) {
       setToastMessage('Las contraseñas no coinciden');
       setToastType('error');
       return;
     }
+    
     if (!validatePassword(newPassword)) {
       setToastMessage('La contraseña no cumple con los requisitos de seguridad');
       setToastType('error');
       return;
     }
+
     setIsChanging(true);
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users/reset-auth-password`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ newPass: newPassword, user_id: userId }),
-      });
-      if (!response.ok) throw new Error('Failed to change password');
-      setToastMessage('Contraseña cambiada con éxito');
-      setToastType('success');
+      const result = await changePassword(userId, newPassword);
       
-      setTimeout(() => {
-        router.push('/signin');
-      }, 2000);
+      if (result.success) {
+        setToastMessage(result.message);
+        setToastType('success');
+        
+        setTimeout(() => {
+          router.push('/signin');
+        }, 2000);
+      } else {
+        setToastMessage(result.message);
+        setToastType('error');
+      }
     } catch (error) {
       console.error('Error changing password:', error);
       setToastMessage('Error al cambiar la contraseña');
