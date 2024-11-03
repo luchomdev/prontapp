@@ -5,6 +5,7 @@ import OrderFilter from '@/components/panel/OrderFilter';
 import OrderCard from '@/components/panel/OrderCard';
 import OrderCardSkeleton from '@/components/panel/skeletons/SkeletonOrderCard';
 import LoadMoreButton from '@/components/panel/LoadMoreButton';
+import { fetchOrders } from '@/app/actions/orders';
 
 interface Order {
     order_id: number;
@@ -33,26 +34,6 @@ const OrdersPage: React.FC = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [isLoadingMore, setIsLoadingMore] = useState(false);
 
-    const fetchOrders = useCallback(async (page: number, limit: number, start?: string, end?: string, orderIdFilter?: string) => {
-        let url = `${process.env.NEXT_PUBLIC_API_URL}/orders?page=${page}&limit=${limit}`;
-        if (start && end) {
-            url += `&start_date=${encodeURIComponent(start)}&end_date=${encodeURIComponent(end)}`;
-        }
-        if (orderIdFilter) {
-            url += `&order_id=${orderIdFilter}`;
-        }
-
-        try {
-            const response = await fetch(url, { credentials: 'include' });
-            if (!response.ok) throw new Error('Failed to fetch orders');
-            const data = await response.json();
-            return data;
-        } catch (error) {
-            console.error('Error fetching orders:', error);
-            return null;
-        }
-    }, []);
-
     const loadInitialOrders = useCallback(async () => {
         setIsLoading(true);
         const data = await fetchOrders(1, limit);
@@ -62,7 +43,7 @@ const OrdersPage: React.FC = () => {
             setPage(1);
         }
         setIsLoading(false);
-    }, [fetchOrders, limit]);
+    }, [limit]);
 
     useEffect(() => {
         loadInitialOrders();
