@@ -8,6 +8,7 @@ import CustomerInfo from '@/components/panel/CustomerInfo';
 import OrderProducts from '@/components/panel/OrderProducts';
 import ShippingInfo from '@/components/panel/ShippingInfo';
 import Link from 'next/link';
+import { fetchOrderDetail } from '@/app/actions/orders';
 
 import OrderInfoSkeleton from '@/components/panel/skeletons/OrderInfoSkeleton';
 import CustomerInfoSkeleton from '@/components/panel/skeletons/CustomerInfoSkeleton';
@@ -37,15 +38,13 @@ const OrderDetailPage: React.FC = () => {
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
-        const fetchOrderDetail = async () => {
+        const loadOrderDetail = async () => {
             setIsLoading(true);
             try {
-                const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/orders?order_id=${params.id}`, {
-                    credentials: 'include'
-                });
-                if (!response.ok) throw new Error('Failed to fetch order details');
-                const data = await response.json();
-                setOrderData(data.orders[0]); // Assuming the API returns an array with a single order
+                const data = await fetchOrderDetail(params.id as string);
+                if (data) {
+                    setOrderData(data);
+                }
             } catch (error) {
                 console.error('Error fetching order details:', error);
             } finally {
@@ -54,7 +53,7 @@ const OrderDetailPage: React.FC = () => {
         };
 
         if (params.id) {
-            fetchOrderDetail();
+            loadOrderDetail();
         }
     }, [params.id]);
 
