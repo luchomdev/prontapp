@@ -38,6 +38,22 @@ interface Order {
     totalOrders: number;
   }
 
+  interface OrderDetail {
+    order_id: number;
+    delivery_state_description: string;
+    delivery_state: number;
+    created_at: string;
+    payment: number;
+    customer: any;
+    stocks: any;
+    total_shipping_cost: string | null;
+    id: string;
+    guide_state_description: string | null;
+    guide_histories: Array<{ created_at: string; description: string }> | null;
+    guide_id: number | null;
+    last_state: number | null;
+}
+
 export async function fetchOrderGuide(orderId: string): Promise<OrderGuide | null> {
   try {
     const response = await fetch(
@@ -101,6 +117,34 @@ export async function fetchOrders(
       };
     } catch (error) {
       console.error('Error in fetchOrders server action:', error);
+      return null;
+    }
+  }
+
+  export async function fetchOrderDetail(orderId: string): Promise<OrderDetail | null> {
+    try {
+      const response = await fetch(
+        `${process.env.API_BASE_URL}/orders?order_id=${orderId}`,
+        {
+          credentials: 'include',
+          headers: {
+            'Cookie': cookies().toString() || ''
+          },
+          cache: 'no-store' // Aseguramos datos frescos
+        }
+      );
+  
+      if (!response.ok) throw new Error('Failed to fetch order details');
+      
+      const data = await response.json();
+      
+      if (data.orders && data.orders.length > 0) {
+        return data.orders[0];
+      }
+      
+      return null;
+    } catch (error) {
+      console.error('Error in fetchOrderDetail server action:', error);
       return null;
     }
   }
