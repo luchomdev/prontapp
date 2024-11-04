@@ -83,7 +83,7 @@ const ProductDetailComp: React.FC<ProductDetailProps> = ({ product, relatedProdu
                     );
                     
                     if (shippingValue !== null) {
-                        setShippingEstimate(shippingValue);
+                        setShippingEstimate(shippingValue.quotations[0].shipping_value);
                     }
                 } catch (error) {
                     console.error('Error fetching shipping estimate:', error);

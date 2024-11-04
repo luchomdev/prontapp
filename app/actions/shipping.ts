@@ -3,6 +3,7 @@
 import { cookies } from 'next/headers'
 
 interface ShippingQuotation {
+  stock_ids: number[];
   shipping_value: number;
   courier_id: number;
   courier_name: string;
@@ -17,7 +18,7 @@ export async function getShippingQuote(
   stockIds: number[], 
   cityTo: number,
   payment: number
-): Promise<number | null> {
+): Promise<ShippingQuoteResponse | null> {
   try {
     const response = await fetch(
       `${process.env.API_BASE_URL}/shipping/quote`,
@@ -40,12 +41,8 @@ export async function getShippingQuote(
     }
 
     const data: ShippingQuoteResponse = await response.json();
+    return data;
     
-    if (data.status === 'success' && data.quotations.length > 0) {
-      return data.quotations[0].shipping_value;
-    }
-    
-    return null;
   } catch (error) {
     console.error('Error in getShippingQuote server action:', error);
     return null;
