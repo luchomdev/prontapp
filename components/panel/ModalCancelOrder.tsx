@@ -1,6 +1,8 @@
+"use client"
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Toaster from '@/components/Toaster';
+import { cancelOrder } from '@/app/actions/orders';
 
 interface ModalCancelOrderProps {
   order_id: number;
@@ -16,19 +18,15 @@ const ModalCancelOrder: React.FC<ModalCancelOrderProps> = ({ order_id, onClose }
   const handleCancelOrder = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/orders/${order_id}/cancel`, {
-        method: 'POST',
-        credentials: 'include',
-      });
+      const success = await cancelOrder(order_id);
 
-      if (!response.ok) {
+      if (!success) {
         throw new Error('Failed to cancel order');
       }
 
       setToastMessage('Orden cancelada exitosamente');
       setToastType('success');
       
-      // Delay redirect to show the success message
       setTimeout(() => {
         router.push('/panel/orders');
       }, 2000);
