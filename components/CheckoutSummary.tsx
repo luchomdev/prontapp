@@ -1,10 +1,11 @@
-"use client"
+    "use client"
 import { useEffect, useState } from 'react';
 import { useStore } from '@/stores/cartStore';
 import { useRouter } from 'next/navigation';
 import PaySecureText from '@/components/SecurePaymentText';
 import SkeletonSummary from '@/components/skeletons/SkeletonSummary';
 import { formatCurrency } from '@/lib/Helpers';
+import { getShippingQuote } from '@/app/actions/shipping';
 
 const CheckoutSummary = () => {
   const router = useRouter();
@@ -42,23 +43,14 @@ const CheckoutSummary = () => {
       }
 
       try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/shipping/quote`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            stock_ids,
-            city_to,
-            payment: 0
-          }),
-        });
+        const data = await getShippingQuote(stock_ids, city_to, 0);
 
-        const data = await response.json();
-
-        if (data.status === 'success') {
+        if (data && data.status === 'success') {
           setShippingQuote(data.quotations);
-          const totalShipping = data.quotations.reduce((sum: number, q: any) => sum + q.shipping_value, 0);
+          const totalShipping = data.quotations.reduce(
+            (sum: number, q: any) => sum + q.shipping_value, 
+            0
+          );
           setTotalShippingCost(totalShipping);
         } else {
           console.error('Failed to get shipping quote');
