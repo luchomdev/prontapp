@@ -1,6 +1,8 @@
+"use client"
 import React, { useState } from 'react';
 import { FaStar } from 'react-icons/fa';
 import Toaster from '@/components/Toaster';
+import { submitRating } from '@/app/actions/orders';
 
 interface ModalSetStarProps {
   productId: string;
@@ -18,27 +20,15 @@ const ModalSetStar: React.FC<ModalSetStarProps> = ({ productId, orderId, onClose
   const handleSubmit = async () => {
     setIsSubmitting(true);
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/rating`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify({
-          productId,
-          orderId,
-          rating: rating.toString(),
-          comment,
-        }),
-      });
+      const success = await submitRating(productId, orderId, rating, comment);
 
-      if (!response.ok) {
+      if (!success) {
         throw new Error('Failed to submit rating');
       }
 
       setToastMessage('Calificación enviada con éxito');
       setToastType('success');
-      setTimeout(onClose, 2000); // Close modal after showing success message
+      setTimeout(onClose, 2000);
     } catch (error) {
       console.error('Error submitting rating:', error);
       setToastMessage('Error al enviar la calificación');
