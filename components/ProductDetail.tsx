@@ -14,6 +14,7 @@ import RecentlyViewed from '@/components/RecentlyViewed';
 import Toaster from '@/components/Toaster';
 import { ProductDetail, ProductOrProductForHome, ProductVariant, parseMeasures } from '@/lib/dataLayer';
 import { useStore } from '@/stores/cartStore';
+import { getShippingQuote } from '@/app/actions/shipping';
 
 
 interface ProductDetailProps {
@@ -75,25 +76,14 @@ const ProductDetailComp: React.FC<ProductDetailProps> = ({ product, relatedProdu
                 setIsLoadingShippingEstimate(true);
                 setShippingEstimate(null);
                 try {
-                    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/shipping/quote`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({
-                            stock_ids: [selectedVariant.stock_id],
-                            city_to: shippingAddress.city_id,
-                            payment: 1
-                        }),
-                    });
-
-                    if (!response.ok) {
-                        throw new Error('Failed to fetch shipping estimate');
-                    }
-
-                    const data = await response.json();
-                    if (data.status === 'success' && data.quotations.length > 0) {
-                        setShippingEstimate(data.quotations[0].shipping_value);
+                    const shippingValue = await getShippingQuote(
+                        [selectedVariant.stock_id],
+                        shippingAddress.city_id,
+                        1
+                    );
+                    
+                    if (shippingValue !== null) {
+                        setShippingEstimate(shippingValue);
                     }
                 } catch (error) {
                     console.error('Error fetching shipping estimate:', error);
