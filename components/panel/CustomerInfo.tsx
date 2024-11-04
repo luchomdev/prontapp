@@ -1,6 +1,8 @@
+"use client"
 import React, { useState } from 'react';
 import { FaEdit } from 'react-icons/fa';
 import Toaster from '@/components/Toaster';
+import { updateOrderAddress } from '@/app/actions/orders';
 
 interface CustomerInfoProps {
   customer: {
@@ -27,21 +29,12 @@ const CustomerInfo: React.FC<CustomerInfoProps> = ({ customer, guide_id, deliver
 
   const handleUpdateAddress = async () => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/orders/${order_uuid}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify({
-          customer: {
-            ...customer,
-            address: newAddress,
-          },
-        }),
+      const success = await updateOrderAddress(order_uuid, {
+        ...customer,
+        address: newAddress,
       });
 
-      if (!response.ok) {
+      if (!success) {
         throw new Error('Failed to update address');
       }
 
