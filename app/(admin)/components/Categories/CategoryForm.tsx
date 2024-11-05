@@ -2,18 +2,13 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { FaTimes } from 'react-icons/fa';
 import Toaster from '@/components/Toaster';
+import { 
+  Category, 
+  fetchAllCategories as fetchAllCategoriesServer, 
+  fetchCategoryDetails as fetchCategoryDetailsServer,
+  saveCategory as saveCategoryServer
+} from '@/app/(admin)/actions/categories';
 
-interface Category {
-  id: string;
-  name: string;
-  parent_id: string | null;
-  slug: string;
-  is_active: boolean;
-  image_type: string | null;
-  image_data: string | null;
-  level?: number;
-  path?: string;
-}
 
 
 interface CategoryFormProps {
@@ -40,11 +35,8 @@ const CategoryForm: React.FC<CategoryFormProps> = ({ category, onClose }) => {
 
   const fetchAllCategories = useCallback(async () => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/categories/admin?limit=1000`, {
-        credentials: 'include',
-      });
-      const data = await response.json();
-      setAllCategories(data.categories);
+      const categories = await fetchAllCategoriesServer();
+      setAllCategories(categories);
     } catch (error) {
       console.error('Error fetching all categories:', error);
       showToasterMessage('Error al cargar las categorías', 'error');
@@ -53,11 +45,8 @@ const CategoryForm: React.FC<CategoryFormProps> = ({ category, onClose }) => {
 
   const fetchCategoryDetails = useCallback(async (categoryId: string) => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/categories/admin?category_id=${categoryId}`, {
-        credentials: 'include',
-      });
-      const data = await response.json();
-      setFormData(data.category);
+      const categoryData = await fetchCategoryDetailsServer(categoryId);
+      setFormData(categoryData);
     } catch (error) {
       console.error('Error fetching category details:', error);
       showToasterMessage('Error al cargar los detalles de la categoría', 'error');
@@ -88,39 +77,24 @@ const CategoryForm: React.FC<CategoryFormProps> = ({ category, onClose }) => {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsLoading(true);
+    
     const formDataToSend = new FormData();
-
-    // Añadir campos del formulario
     formDataToSend.append('name', formData.name);
     formDataToSend.append('slug', formData.slug);
     formDataToSend.append('is_active', formData.is_active.toString());
     if (formData.parent_id) {
       formDataToSend.append('parent_id', formData.parent_id);
     }
-
-    // Añadir imagen si existe
     if (image) {
       formDataToSend.append('image', image);
     }
 
     try {
-      const url = category
-        ? `${process.env.NEXT_PUBLIC_API_URL}/categories/${category.id}`
-        : `${process.env.NEXT_PUBLIC_API_URL}/categories`;
-      const method = category ? 'PUT' : 'POST';
-
-      const response = await fetch(url, {
-        method,
-        body: formDataToSend,
-        credentials: 'include',
-      });
-
-      if (response.ok) {
-        showToasterMessage('Categoría guardada exitosamente', 'success');
+      const result = await saveCategoryServer(formDataToSend, category?.id);
+      showToasterMessage(result.message, result.success ? 'success' : 'error');
+      
+      if (result.success) {
         setTimeout(onClose, 2000);
-      } else {
-        const errorData = await response.json();
-        showToasterMessage(errorData.message || 'Error al guardar la categoría', 'error');
       }
     } catch (error) {
       console.error('Error saving category:', error);
