@@ -1,26 +1,7 @@
 'use server'
 
-import { headers } from 'next/headers';
-import { cookies } from 'next/headers';
+import { cookies, headers } from 'next/headers';
 
-/* interface SignInResponse {
-  success: boolean;
-  user?: {
-    id: string;
-    email: string;
-    name: string;
-    lastName: string;
-    role: string;
-    isActive: boolean;
-    identification: string;
-    defaultAddress?: {
-      cityId: number;
-      address: string;
-      phone: string;
-    } | null;
-  };
-  error?: string;
-} */
 
   interface SignInResponse {
     success: boolean;
@@ -113,3 +94,42 @@ export async function signIn(email: string, password: string): Promise<SignInRes
     };
   }
 }
+
+export async function signOut(): Promise<{ success: boolean; message: string }> {
+  try {
+    const response = await fetch(
+      `${process.env.API_BASE_URL}/users/signout`,
+      {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Cookie': cookies().toString() || ''
+        }
+      }
+    );
+
+    if (!response.ok) {
+      return {
+        success: false,
+        message: 'Error al cerrar sesión'
+      };
+    }
+
+    // Limpiar cookies
+    cookies().getAll().forEach(cookie => {
+      cookies().delete(cookie.name);
+    });
+
+    return {
+      success: true,
+      message: 'Sesión cerrada exitosamente'
+    };
+  } catch (error) {
+    console.error('Error in signOut server action:', error);
+    return {
+      success: false,
+      message: 'Error al conectar con el servidor'
+    };
+  }
+}
+

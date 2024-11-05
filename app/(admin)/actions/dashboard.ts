@@ -76,3 +76,27 @@ export async function fetchDashboardData(startDate: string, endDate: string): Pr
     throw error;
   }
 }
+
+export async function fetchWalletBalance(): Promise<number> {
+  try {
+    const response = await fetch(
+      `${process.env.API_BASE_URL}/dashboard/wallet-balance`,
+      {
+        credentials: 'include',
+        headers: {
+          'Cookie': cookies().toString() || ''
+        }
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch wallet balance');
+    }
+
+    const data = await response.json();
+    return data.balance;
+  } catch (error) {
+    console.error('Error in fetchWalletBalance server action:', error);
+    return 0;
+  }
+}
