@@ -7,6 +7,7 @@ import OrderSummary from '@/components/OrderSummary';
 import { useStore } from '@/stores/cartStore';
 import SkeletonPaymentContainer from '@/components/skeletons/SkeletonPaymentContainer';
 import SkeletonLoadingModal from '@/components/skeletons/SkeletonLoadingModal';
+import { createOrUpdateTmpOrderAct } from '@/app/actions/payment';
 
 interface AuthUser {
     id: string;
@@ -77,41 +78,32 @@ const PaymentContainer: React.FC<PaymentContainerProps> = ({ epaycoToken, user }
     const createOrUpdateTmpOrder = useCallback(async () => {
         setIsCreatingTmpOrder(true);
         try {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/orders/tmp-order`, {
-                method: 'POST',
-                credentials: 'include',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    cart_content: cart,
-                    shipping_quote: shippingQuote,
-                    shipping_address: shippingAddress,
-                    subtotals_value: subtotalsValue,
-                    total_cart_value: totalCartValue,
-                    total_shipping_cost: totalShippingCost,
-                    customer: customerInfo,
-                    payment: payment.toString(),
-                    auth_user_id: user.id,
-                    auth_user_email: user.email,
-                    order_tmp_id: tmp_order_id
-                })
+            const currentState = useStore.getState();
+            const data = await createOrUpdateTmpOrderAct({
+                cart_content: currentState.cart,
+                shipping_quote: currentState.shippingQuote,
+                shipping_address: currentState.shippingAddress,
+                subtotals_value: currentState.subtotalsValue,
+                total_cart_value: currentState.totalCartValue,
+                total_shipping_cost: currentState.totalShippingCost,
+                customer: currentState.customerInfo,
+                payment: payment.toString(),
+                auth_user_id: user.id,
+                auth_user_email: user.email,
+                order_tmp_id: currentState.tmp_order_id
             });
 
-            if (!response.ok) {
-                throw new Error('Failed to create or update temporary order');
+            if (data) {
+                setTmpOrderId(data.id);
             }
-
-            const data = await response.json();
-            setTmpOrderId(data.id);
         } catch (error) {
             console.error('Error creating or updating temporary order:', error);
-            // Aquí puedes manejar el error, por ejemplo mostrando un mensaje al usuario
         } finally {
             setIsCreatingTmpOrder(false);
         }
-    }, [cart, shippingQuote, shippingAddress, subtotalsValue, totalCartValue, totalShippingCost, customerInfo, payment, user.id, user.email, tmp_order_id, setTmpOrderId]);
-
+    }, [payment, setTmpOrderId, user.id, user.email]);
+    
+    
     useEffect(() => {
         if (customerInfo && shippingAddress) {
             createOrUpdateTmpOrder();
