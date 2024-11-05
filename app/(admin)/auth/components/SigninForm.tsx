@@ -4,22 +4,20 @@ import React, { useState } from 'react';
 import { FaEye, FaEyeSlash, FaSpinner } from 'react-icons/fa';
 import { useStore } from '@/stores/cartStore';
 import { useRouter } from 'next/navigation';
-import Toaster from '@/components/Toaster';
 import { useHydration } from '@/hooks/useHydration';
+import { signIn } from '@/app/(admin)/actions/auth';
 
 const SigninForm: React.FC = () => {
     const hydrated = useHydration();
     const [showPassword, setShowPassword] = useState(false);
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [error, setError] = useState('');
     const { setUser, setAuthenticated } = useStore((state) => ({
         setUser: state.setUser,
         setAuthenticated: state.setAuthenticated
     }));
     const router = useRouter();
-    const [toasterMessage, setToasterMessage] = useState('');
-    const [toasterType, setToasterType] = useState<'success' | 'error'>('success');
-    const [showToaster, setShowToaster] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
 
     const togglePasswordVisibility = () => {
@@ -28,50 +26,34 @@ const SigninForm: React.FC = () => {
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
+        setError('');
+
         if (!email || !password) {
-            setToasterMessage('Por favor, complete todos los campos');
-            setToasterType('error');
-            setShowToaster(true);
+            setError('Por favor, complete todos los campos');
             return;
         }
 
         setIsLoading(true);
 
         try {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users/signin`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ email, password }),
-                credentials: 'include',
-            });
+            const result = await signIn(email, password);
 
-            const data = await response.json();
-
-            if (response.ok) {
-                setUser(data.user);
-                setAuthenticated(true);
-                setToasterMessage('Inicio de sesión exitoso');
-                setToasterType('success');
-                setShowToaster(true);
-
-
-                if (data.user.role === 'admin') {
-                    router.replace('/console/dashboard');
-                } else {
-                    router.replace('/');
-                }
-
-            } else {
-                setToasterMessage(data.message || 'Error al iniciar sesión');
-                setToasterType('error');
-                setShowToaster(true);
+            if (!result.success || !result.user) {
+                setError(result.error || 'Error al iniciar sesión');
+                return;
             }
+
+            setUser(result.user);
+            setAuthenticated(true);
+
+            if (result.user.role === 'admin') {
+                router.replace('/console/dashboard');
+            } else {
+                router.replace('/');
+            }
+            
         } catch (error) {
-            setToasterMessage('Error al conectar con el servidor');
-            setToasterType('error');
-            setShowToaster(true);
+            setError('Error al conectar con el servidor');
         } finally {
             setIsLoading(false);
         }
@@ -83,13 +65,6 @@ const SigninForm: React.FC = () => {
 
     return (
         <div className="w-full max-w-md p-6 bg-white rounded-lg shadow-md mx-2">
-            {showToaster && (
-                <Toaster
-                    message={toasterMessage}
-                    type={toasterType}
-                    onClose={() => setShowToaster(false)}
-                />
-            )}
             <div className='flex justify-center'>
                 <Logo />
             </div>
@@ -136,6 +111,7 @@ const SigninForm: React.FC = () => {
                         </button>
                     </div>
                 </div>
+                {error && <p className="text-red-500 mb-4">{error}</p>}
                 <button
                     type="submit"
                     className="w-full bg-slate-600 text-white text-xs font-medium py-2 px-4 rounded-md hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-500 disabled:opacity-50 disabled:cursor-not-allowed"
