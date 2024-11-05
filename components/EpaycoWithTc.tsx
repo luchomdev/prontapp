@@ -6,6 +6,8 @@ import PaySecureText from '@/components/SecurePaymentText';
 import { useStore } from '@/stores/cartStore';
 import SkeletonLoadingModal from '@/components/skeletons/SkeletonLoadingModal';
 import Toaster from '@/components/Toaster';
+import { getShippingQuote } from '@/app/actions/shipping';
+import { createOrUpdateTmpOrderAct, getSavedCards, processEpaycoPayment } from '@/app/actions/payment';
 
 interface AuthUser {
     id: string;
@@ -90,20 +92,13 @@ const EpaycoWithTc: React.FC<EpaycoWithTcProps> = ({ isActive, onToggle, epaycoT
         if (!shippingAddress) return;
 
         setIsLoadingQuote(true);
-        const stock_ids = Object.keys(cart).map(Number);
         try {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/shipping/quote`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ stock_ids, city_to: shippingAddress.city_id, payment: 1 }),
-            });
+            const stock_ids = Object.keys(cart).map(Number);
+            const data = await getShippingQuote(stock_ids, shippingAddress.city_id, 1);
 
-            if (!response.ok) throw new Error('Failed to fetch shipping quote');
-
-            const data = await response.json();
-            if (data.status === 'success') {
+            if (data?.status === 'success') {
                 setShippingQuote(data.quotations);
-                const totalShipping = data.quotations.reduce((sum: number, q: any) => sum + q.shipping_value, 0);
+                const totalShipping = data.quotations.reduce((sum: number, q) => sum + q.shipping_value, 0);
                 setTotalShippingCost(totalShipping);
             }
         } catch (error) {
@@ -118,29 +113,23 @@ const EpaycoWithTc: React.FC<EpaycoWithTcProps> = ({ isActive, onToggle, epaycoT
         setIsLoadingOrder(true);
         try {
             const currentState = useStore.getState();
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/orders/tmp-order`, {
-                method: 'POST',
-                credentials: 'include',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    cart_content: currentState.cart,
-                    shipping_quote: currentState.shippingQuote,
-                    shipping_address: currentState.shippingAddress,
-                    subtotals_value: currentState.subtotalsValue,
-                    total_cart_value: currentState.totalCartValue,
-                    total_shipping_cost: currentState.totalShippingCost,
-                    customer: currentState.customerInfo,
-                    payment: "1",
-                    auth_user_id: user.id,
-                    auth_user_email: user.email,
-                    order_tmp_id: currentState.tmp_order_id
-                }),
+            const data = await createOrUpdateTmpOrderAct({
+                cart_content: currentState.cart,
+                shipping_quote: currentState.shippingQuote,
+                shipping_address: currentState.shippingAddress,
+                subtotals_value: currentState.subtotalsValue,
+                total_cart_value: currentState.totalCartValue,
+                total_shipping_cost: currentState.totalShippingCost,
+                customer: currentState.customerInfo,
+                payment: "1", // Pago con tarjeta
+                auth_user_id: user.id,
+                auth_user_email: user.email,
+                order_tmp_id: currentState.tmp_order_id
             });
 
-            if (!response.ok) throw new Error('Failed to create or update temporary order');
-
-            const data = await response.json();
-            setTmpOrderId(data.id);
+            if (data) {
+                setTmpOrderId(data.id);
+            }
         } catch (error) {
             console.error('Error creating or updating temporary order:', error);
             setError('Error al actualizar la orden temporal');
@@ -151,17 +140,11 @@ const EpaycoWithTc: React.FC<EpaycoWithTcProps> = ({ isActive, onToggle, epaycoT
 
     const loadSavedCards = useCallback(async () => {
         try {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/epayco/saved-tcs?user_id=${user.id}&email=${user.email}`, {
-                method: 'GET',
-                credentials: 'include',
-                headers: {
-                    'Content-Type': 'application/json',
-                }
-            });
-            if (!response.ok) throw new Error('Failed to load saved cards');
-            const data = await response.json();
-            setSavedCards(data);
-            if (data.length === 0) setShowNewCardForm(true);
+            const data = await getSavedCards(user.id, user.email);
+            if (data) {
+                setSavedCards(data);
+                if (data.length === 0) setShowNewCardForm(true);
+            }
         } catch (error) {
             console.error('Error loading saved cards:', error);
             setError('Error al cargar las tarjetas guardadas');
@@ -229,20 +212,13 @@ const EpaycoWithTc: React.FC<EpaycoWithTcProps> = ({ isActive, onToggle, epaycoT
                 testMode: process.env.NEXT_PUBLIC_EPAYCO_TEST === 'true',
                 extra1: tmp_order_id
             };
-            console.log("[Payload Process payment] ", paymentData)
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/epayco/process-payment`, {
-                method: 'POST',
-                credentials: 'include',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(paymentData),
-            });
 
-            if (!response.ok) throw new Error('Failed to process payment');
+            const result = await processEpaycoPayment(paymentData);
 
-            const data = await response.json();
-            console.log("[DATA recibida de la transacción]", data.data)
-            if (data.data.transaction.success && (Number(data.data.transaction.data.cod_respuesta)===1 || Number(data.data.transaction.data.cod_respuesta)===3 )) {
-                router.replace(`/confirmation?res_transaction=${encodeURIComponent(JSON.stringify(data.data.transaction.data))}`);
+            if (result?.data.transaction.success &&
+                (Number(result.data.transaction.data.cod_respuesta) === 1 ||
+                    Number(result.data.transaction.data.cod_respuesta) === 3)) {
+                router.replace(`/confirmation?res_transaction=${encodeURIComponent(JSON.stringify(result.data.transaction.data))}`);
             } else {
                 setError('El pago no pudo ser procesado. Por favor, intente nuevamente.');
             }

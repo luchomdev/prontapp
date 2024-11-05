@@ -5,6 +5,8 @@ import { FaMoneyBillWave, FaChevronDown, FaChevronUp } from 'react-icons/fa';
 import { useStore } from '@/stores/cartStore';
 import SkeletonLoadingModal from '@/components/skeletons/SkeletonLoadingModal';
 import Toaster from '@/components/Toaster';
+import { getShippingQuote } from '@/app/actions/shipping';
+import { createOrUpdateTmpOrderAct, processCashOrder } from '@/app/actions/payment';
 
 interface AuthUser {
     id: string;
@@ -72,20 +74,13 @@ const Cash: React.FC<CashProps> = ({ isActive, onToggle, user }) => {
     if (!shippingAddress) return;
 
     setIsLoadingQuote(true);
-    const stock_ids = Object.keys(cart).map(Number);
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/shipping/quote`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ stock_ids, city_to: shippingAddress.city_id, payment: 0 }),
-      });
-
-      if (!response.ok) throw new Error('Failed to fetch shipping quote');
-
-      const data = await response.json();
-      if (data.status === 'success') {
+      const stock_ids = Object.keys(cart).map(Number);
+      const data = await getShippingQuote(stock_ids, shippingAddress.city_id, 0);
+      
+      if (data?.status === 'success') {
         setShippingQuote(data.quotations);
-        const totalShipping = data.quotations.reduce((sum: number, q: any) => sum + q.shipping_value, 0);
+        const totalShipping = data.quotations.reduce((sum: number, q) => sum + q.shipping_value, 0);
         setTotalShippingCost(totalShipping);
       }
     } catch (error) {
@@ -99,30 +94,24 @@ const Cash: React.FC<CashProps> = ({ isActive, onToggle, user }) => {
   const createOrUpdateTmpOrder = useCallback(async () => {
     setIsLoading(true);
     try {
-      const currentState = useStore.getState(); // Get the most recent state
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/orders/tmp-order`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          cart_content: currentState.cart,
-          shipping_quote: currentState.shippingQuote,
-          shipping_address: currentState.shippingAddress,
-          subtotals_value: currentState.subtotalsValue,
-          total_cart_value: currentState.totalCartValue,
-          total_shipping_cost: currentState.totalShippingCost,
-          customer: currentState.customerInfo,
-          payment: "0",
-          auth_user_id: user.id,
-          auth_user_email: user.email,
-          order_tmp_id: currentState.tmp_order_id
-        }),
+      const currentState = useStore.getState();
+      const data = await createOrUpdateTmpOrderAct({
+        cart_content: currentState.cart,
+        shipping_quote: currentState.shippingQuote,
+        shipping_address: currentState.shippingAddress,
+        subtotals_value: currentState.subtotalsValue,
+        total_cart_value: currentState.totalCartValue,
+        total_shipping_cost: currentState.totalShippingCost,
+        customer: currentState.customerInfo,
+        payment: "0", // Pago en efectivo
+        auth_user_id: user.id,
+        auth_user_email: user.email,
+        order_tmp_id: currentState.tmp_order_id
       });
-
-      if (!response.ok) throw new Error('Failed to create or update temporary order');
-
-      const data = await response.json();
-      setTmpOrderId(data.id);
+  
+      if (data) {
+        setTmpOrderId(data.id);
+      }
     } catch (error) {
       console.error('Error creating or updating temporary order:', error);
       setError('Error al actualizar la orden temporal');
@@ -147,17 +136,13 @@ const Cash: React.FC<CashProps> = ({ isActive, onToggle, user }) => {
   const handleCreateOrder = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/orders/cash-create`, {
-        method: 'POST',
-        credentials:'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tmp_order_id }),
-      });
-
-      if (!response.ok) throw new Error('Failed to create order');
-
-      const data = await response.json();
-      router.push(`/cash-confirmation?orderIds=${data.orderIds.join(',')}&totalValue=${totalCartValue}`);
+      const data = await processCashOrder(tmp_order_id);
+      
+      if (data) {
+        router.push(`/cash-confirmation?orderIds=${data.orderIds.join(',')}&totalValue=${totalCartValue}`);
+      } else {
+        throw new Error('Failed to create order');
+      }
     } catch (error) {
       console.error('Error creating order:', error);
       setError('Error al crear la orden');
