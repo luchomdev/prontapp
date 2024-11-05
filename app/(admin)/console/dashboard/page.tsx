@@ -1,6 +1,7 @@
 "use client"
 import React, { useState, useEffect, useCallback } from 'react';
 import { Chart } from "react-google-charts";
+import { fetchDashboardData } from '@/app/(admin)/actions/dashboard';
 
 interface Customer {
   "name": string;
@@ -39,10 +40,9 @@ const AdminDashboard: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [hasData, setHasData] = useState(true);
 
-  // Función auxiliar para formatear fechas
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    return date.toISOString().split('T')[0]; // Formato YYYY-MM-DD
+    return date.toISOString().split('T')[0];
   };
 
   const formatChartData = useCallback((data: any) => {
@@ -62,32 +62,15 @@ const AdminDashboard: React.FC = () => {
   const fetchData = useCallback(async () => {
     setIsLoading(true);
     try {
-      // Fetch KPI data
-      const kpiResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/dashboard/kpis?start_date=${dateRange.start}&end_date=${dateRange.end}`, {
-        credentials: 'include'
-      });
-      const kpiData = await kpiResponse.json();
-
-      // Fetch chart data
-      const chartResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/dashboard/charts?start_date=${dateRange.start}&end_date=${dateRange.end}`, {
-        credentials: 'include'
-      });
-      const chartDataRaw = await chartResponse.json();
-      const formattedChartData = formatChartData(chartDataRaw);
+      const data = await fetchDashboardData(dateRange.start, dateRange.end);
+      const formattedChartData = formatChartData(data.chartData);
       
-
-      // Fetch customer data
-      const customerResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/dashboard/customer-order-stats?start_date=${dateRange.start}&end_date=${dateRange.end}`, {
-        credentials: 'include'
-      });
-      const customerData = await customerResponse.json();
-
-      setKpiData(kpiData);
+      setKpiData(data.kpiData);
       setChartData(formattedChartData);
-      setCustomerData(customerData);
+      setCustomerData(data.customerData);
 
       // Verificar si hay datos
-      const hasData = kpiData.totalSales > 0 || customerData.length > 0;
+      const hasData = data.kpiData.totalSales > 0 || data.customerData.length > 0;
       setHasData(hasData);
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
