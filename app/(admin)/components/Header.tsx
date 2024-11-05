@@ -8,6 +8,8 @@ import { useStore } from '@/stores/cartStore';
 import { useRouter } from 'next/navigation';
 import Toaster from '@/components/Toaster';
 import { useHydration } from '@/hooks/useHydration';
+import { signOut } from '@/app/(admin)/actions/auth';
+import { fetchWalletBalance } from '@/app/(admin)/actions/dashboard';
 
 const Header: React.FC = () => {
   const hydrated = useHydration();
@@ -36,52 +38,29 @@ const Header: React.FC = () => {
   }, [checkAuthAndRedirect]);
 
   useEffect(() => {
-    if (hydrated && !isLoading && isAuthenticated) {
-      fetchWalletBalance();
-    }
-  }, [hydrated, isLoading, isAuthenticated]);
-
-
-
-  const fetchWalletBalance = async () => {
-    try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/dashboard/wallet-balance`, {
-        credentials: 'include',
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setWalletBalance(data.balance);
-      } else {
-        console.error('Error fetching wallet balance');
+    const loadWalletBalance = async () => {
+      if (hydrated && !isLoading && isAuthenticated) {
+        const balance = await fetchWalletBalance();
+        setWalletBalance(balance);
       }
-    } catch (error) {
-      console.error('Error fetching wallet balance:', error);
-    }
-  };
+    };
 
+    loadWalletBalance();
+  }, [hydrated, isLoading, isAuthenticated]);
 
   const handleLogout = async () => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users/signout`, {
-        method: 'POST',
-        credentials: 'include',
-      });
-  
-      if (response.ok) {
+      const result = await signOut();
+      
+      setToasterMessage(result.message);
+      setToasterType(result.success ? 'success' : 'error');
+      setShowToaster(true);
+
+      if (result.success) {
         logout();
-        console.log("Sesión cerrada exitosamente");
-        setToasterMessage('Sesión cerrada exitosamente');
-        setToasterType('success');
-        setShowToaster(true);
-        
         setTimeout(() => {
-          console.log("Redirigiendo a /auth/signin");
           window.location.href = '/auth/signin';
         }, 100);
-      } else {
-        setToasterMessage('Error al cerrar sesión');
-        setToasterType('error');
-        setShowToaster(true);
       }
     } catch (error) {
       setToasterMessage('Error al conectar con el servidor');
@@ -97,7 +76,6 @@ const Header: React.FC = () => {
   if (!isAuthenticated) {
     return null;
   }
-
 
   return (
     <header className="bg-white shadow-sm p-4 flex justify-between items-center border-b border-slate-200">
@@ -126,12 +104,25 @@ const Header: React.FC = () => {
           </button>
           {isMenuOpen && (
             <>
-              <div className="fixed inset-0 bg-black bg-opacity-50 z-40" onClick={() => setIsMenuOpen(false)} />
+              <div 
+                className="fixed inset-0 bg-black bg-opacity-50 z-40" 
+                onClick={() => setIsMenuOpen(false)} 
+              />
               <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50">
-                <Link onClick={() => setIsMenuOpen(!isMenuOpen)} href={`/console/customers/account/${user?.id}`} className="block px-2 py-2 text-xs text-slate-700 hover:bg-slate-100">Mi cuenta</Link>
-                <Link onClick={() => setIsMenuOpen(!isMenuOpen)} href={`/console/config`} className="flex items-center space-x-2 px-2 py-2 text-xs text-slate-700 hover:bg-slate-100">
-                <FcDataConfiguration size={16} />
-                <span>Configuración Global</span>
+                <Link 
+                  onClick={() => setIsMenuOpen(false)} 
+                  href={`/console/customers/account/${user?.id}`} 
+                  className="block px-2 py-2 text-xs text-slate-700 hover:bg-slate-100"
+                >
+                  Mi cuenta
+                </Link>
+                <Link 
+                  onClick={() => setIsMenuOpen(false)} 
+                  href="/console/config" 
+                  className="flex items-center space-x-2 px-2 py-2 text-xs text-slate-700 hover:bg-slate-100"
+                >
+                  <FcDataConfiguration size={16} />
+                  <span>Configuración Global</span>
                 </Link>
                 <hr className="my-1 border-slate-200" />
                 <button
