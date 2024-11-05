@@ -5,11 +5,7 @@ import ConfigList from '@/app/(admin)/components/config/ConfigList';
 import EditConfigModal from '@/app/(admin)/components/config/EditConfigModal';
 import NewConfigForm from '@/app/(admin)/components/config/NewConfigForm';
 import Toaster from '@/components/Toaster';
-
-interface Config {
-  key: string;
-  value: string | number;
-}
+import { Config, fetchConfigs, updateConfig, createConfig } from '@/app/(admin)/actions/config';
 
 const ConfigPage: React.FC = () => {
   const [configs, setConfigs] = useState<Config[]>([]);
@@ -20,13 +16,16 @@ const ConfigPage: React.FC = () => {
   const [toastType, setToastType] = useState<'success' | 'error'>('success');
   const router = useRouter();
 
-  const fetchConfigs = useCallback(async () => {
+  const showToast = useCallback((message: string, type: 'success' | 'error') => {
+    setToastMessage(message);
+    setToastType(type);
+    setTimeout(() => setToastMessage(null), 3000);
+  }, []);
+
+  const loadConfigs = useCallback(async () => {
+    setIsLoading(true);
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/config`, {
-        credentials: 'include'
-      });
-      if (!response.ok) throw new Error('Failed to fetch configs');
-      const data = await response.json();
+      const data = await fetchConfigs();
       setConfigs(data);
     } catch (error) {
       console.error('Error fetching configs:', error);
@@ -34,11 +33,11 @@ const ConfigPage: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [showToast]);
 
   useEffect(() => {
-    fetchConfigs();
-  }, [fetchConfigs]);
+    loadConfigs();
+  }, [loadConfigs]);
 
   const handleEditConfig = (config: Config) => {
     setEditingConfig(config);
@@ -46,16 +45,15 @@ const ConfigPage: React.FC = () => {
 
   const handleUpdateConfig = async (updatedConfig: Config) => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/config/update`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify(updatedConfig)
-      });
-      if (!response.ok) throw new Error('Failed to update config');
-      showToast('Configuración actualizada exitosamente', 'success');
-      setEditingConfig(null);
-      fetchConfigs();
+      const success = await updateConfig(updatedConfig);
+      
+      if (success) {
+        showToast('Configuración actualizada exitosamente', 'success');
+        setEditingConfig(null);
+        loadConfigs();
+      } else {
+        throw new Error('Failed to update config');
+      }
     } catch (error) {
       console.error('Error updating config:', error);
       showToast('Error al actualizar la configuración', 'error');
@@ -64,26 +62,19 @@ const ConfigPage: React.FC = () => {
 
   const handleCreateConfig = async (newConfig: Config) => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/config/create`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify(newConfig)
-      });
-      if (!response.ok) throw new Error('Failed to create config');
-      showToast('Configuración creada exitosamente', 'success');
-      setShowNewConfigForm(false);
-      fetchConfigs();
+      const success = await createConfig(newConfig);
+      
+      if (success) {
+        showToast('Configuración creada exitosamente', 'success');
+        setShowNewConfigForm(false);
+        loadConfigs();
+      } else {
+        throw new Error('Failed to create config');
+      }
     } catch (error) {
       console.error('Error creating config:', error);
       showToast('Error al crear la configuración', 'error');
     }
-  };
-
-  const showToast = (message: string, type: 'success' | 'error') => {
-    setToastMessage(message);
-    setToastType(type);
-    setTimeout(() => setToastMessage(null), 3000);
   };
 
   if (isLoading) {
