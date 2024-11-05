@@ -7,18 +7,7 @@ import CategoryForm from '@/app/(admin)/components/Categories/CategoryForm';
 import LoadMoreData from '@/app/(admin)/components/LoadMoreData';
 import SearchCategories from '@/app/(admin)/components/Categories/SearchCategories';
 import Toaster from '@/components/Toaster';
-
-interface Category {
-  id: string;
-  name: string;
-  parent_id: string | null;
-  slug: string;
-  is_active: boolean;
-  image_type: string | null;
-  image_data: string | null;
-  level: number;
-  path: string;
-}
+import { Category, fetchCategories as fetchCategoriesServer } from '@/app/(admin)/actions/categories';
 
 const CategoriesAdminPage = () => {
   const router = useRouter();
@@ -34,8 +23,8 @@ const CategoriesAdminPage = () => {
   const [toasterType, setToasterType] = useState<'success' | 'error'>('success');
   const [showToaster, setShowToaster] = useState(false);
 
-    const isInitialMount = useRef(true);
-    const searchTermRef = useRef(searchTerm);
+  const isInitialMount = useRef(true);
+  const searchTermRef = useRef(searchTerm);
   const pageRef = useRef(page);
   const isLoadingRef = useRef(isLoading);
 
@@ -46,29 +35,13 @@ const CategoriesAdminPage = () => {
   const fetchCategories = useCallback(async (loadMore = false) => {
     if (isLoadingRef.current) return;
     setIsLoading(true);
+    
     try {
       const currentPage = loadMore ? pageRef.current + 1 : 1;
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/categories/admin?page=${currentPage}&limit=${limit}&search=${searchTermRef.current}`, {
-        credentials: 'include'
-      });
+      const data = await fetchCategoriesServer(currentPage, limit, searchTermRef.current);
       
-      if (response.status === 401) {
-        setToasterMessage('La sesión ha expirado. Por favor, inicie sesión nuevamente.');
-        setToasterType('error');
-        setShowToaster(true);
-        setTimeout(() => {
-          router.push('/auth/signin');
-        }, 3000);
-        return;
-      }
-
-      if (!response.ok) {
-        throw new Error('Error en la respuesta del servidor');
-      }
-
-      const data = await response.json();
       if (loadMore) {
-        setCategories(prevCategories => [...prevCategories, ...data.categories]);
+        setCategories(prev => [...prev, ...data.categories]);
         setPage(currentPage);
         pageRef.current = currentPage;
       } else {
@@ -77,7 +50,17 @@ const CategoriesAdminPage = () => {
         pageRef.current = 1;
       }
       setHasMore(data.categories.length === limit);
-    } catch (error) {
+    } catch (error: any) {
+      if (error.message === '401') {
+        setToasterMessage('La sesión ha expirado. Por favor, inicie sesión nuevamente.');
+        setToasterType('error');
+        setShowToaster(true);
+        setTimeout(() => {
+          router.push('/auth/signin');
+        }, 3000);
+        return;
+      }
+      
       console.error('Error fetching categories:', error);
       setToasterMessage('Error al cargar las categorías. Por favor, intente nuevamente.');
       setToasterType('error');
@@ -102,33 +85,33 @@ const CategoriesAdminPage = () => {
     }
   }, [searchTerm, fetchCategories]);
 
-const handleModify = (category: Category) => {
-  setSelectedCategory(category);
-  setShowForm(true);
-};
+  const handleModify = (category: Category) => {
+    setSelectedCategory(category);
+    setShowForm(true);
+  };
 
-const handleCreate = () => {
-  setSelectedCategory(null);
-  setShowForm(true);
-};
+  const handleCreate = () => {
+    setSelectedCategory(null);
+    setShowForm(true);
+  };
 
-const handleFormClose = () => {
-  setShowForm(false);
-  setSelectedCategory(null);
-  fetchCategories();
-};
+  const handleFormClose = () => {
+    setShowForm(false);
+    setSelectedCategory(null);
+    fetchCategories();
+  };
 
-const handleLoadMore = () => {
-  fetchCategories(true);
-};
+  const handleLoadMore = () => {
+    fetchCategories(true);
+  };
 
-const handleSearch = (term: string) => {
-  setSearchTerm(term);
-};
+  const handleSearch = (term: string) => {
+    setSearchTerm(term);
+  };
 
-const handleResetSearch = () => {
-  setSearchTerm('');
-};
+  const handleResetSearch = () => {
+    setSearchTerm('');
+  };
 
   const renderCategories = (categories: Category[]) => {
     if (searchTerm) {

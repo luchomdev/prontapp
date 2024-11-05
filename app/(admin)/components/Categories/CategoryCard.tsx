@@ -4,8 +4,13 @@ import { FaEdit } from 'react-icons/fa';
 interface Category {
   id: string;
   name: string;
+  parent_id: string | null;
+  slug: string;
   is_active: boolean;
-  level: number;
+  image_type: string | null;
+  image_data: string | null;
+  level?: number;
+  path?: string;
 }
 
 interface CategoryCardProps {
