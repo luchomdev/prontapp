@@ -1,10 +1,7 @@
-import React, { useState, useEffect, useCallback } from 'react';
+"use client"
+import React, { useState, useCallback } from 'react';
 import { FaTimes } from 'react-icons/fa';
-
-interface City {
-  city_id: number;
-  name: string;
-}
+import { City, searchCitiesServer, updateUserServer } from '@/app/(admin)/actions/users';
 
 interface EditAccountFormProps {
   user: {
@@ -23,7 +20,6 @@ interface EditAccountFormProps {
   onClose: () => void;
   onSave: () => void;
 }
-
 
 const debounce = (func: Function, delay: number) => {
   let timeoutId: NodeJS.Timeout;
@@ -47,35 +43,26 @@ const EditAccountForm: React.FC<EditAccountFormProps> = ({ user, onClose, onSave
   });
 
   const [isLoading, setIsLoading] = useState(false);
-  const [citySearchTerm, setCitySearchTerm] = useState('');
   const [cityResults, setCityResults] = useState<City[]>([]);
   const [showCityResults, setShowCityResults] = useState(false);
 
-  const searchCities = useCallback((term: string) => {
+  const searchCities = useCallback(async (term: string) => {
     if (term.length < 3) return;
-    const fetchCities = async () => {
-      try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/locations/search-cities?search=${term}`, {
-          credentials: 'include',
-        });
-        if (response.ok) {
-          const cities = await response.json();
-          setCityResults(cities);
-          setShowCityResults(true);
-        }
-      } catch (error) {
+    
+    try {
+        const cities = await searchCitiesServer(term);
+        setCityResults(cities);
+        setShowCityResults(true);
+    } catch (error) {
         console.error('Error searching cities:', error);
-      }
-    };
-    debounce(fetchCities, 300)();
+    }
   }, []);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
     if (name === 'cityText') {
-      setCitySearchTerm(value);
-      searchCities(value);
+      debounce(() => searchCities(value), 300)();
     }
   };
 
@@ -93,22 +80,11 @@ const EditAccountForm: React.FC<EditAccountFormProps> = ({ user, onClose, onSave
     setIsLoading(true);
     try {
       const { cityText, ...dataToSend } = formData;
+      const result = await updateUserServer(user.id, dataToSend);
       
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users/${user.id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(dataToSend),
-        credentials: 'include',
-      });
-
-      if (response.ok) {
+      if (result.success) {
         onSave();
         onClose();
-      } else {
-        const errorData = await response.json();
-        console.error('Error updating user:', errorData);
       }
     } catch (error) {
       console.error('Error updating user:', error);

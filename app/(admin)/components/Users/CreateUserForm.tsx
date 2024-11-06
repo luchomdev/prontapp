@@ -1,5 +1,7 @@
+"use client"
 import React, { useState, useEffect } from 'react';
 import { FaTimes } from 'react-icons/fa';
+import { createUserServer } from '@/app/(admin)/actions/users';
 
 interface CreateUserFormProps {
   onClose: () => void;
@@ -30,21 +32,12 @@ const CreateUserForm: React.FC<CreateUserFormProps> = ({ onClose, showToasterMes
     e.preventDefault();
     setIsLoading(true);
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users/admin`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData),
-        credentials: 'include',
-      });
+      const result = await createUserServer(formData);
       
-      if (response.ok) {
-        showToasterMessage('Usuario creado exitosamente', 'success');
+      showToasterMessage(result.message, result.success ? 'success' : 'error');
+      
+      if (result.success) {
         onClose();
-      } else {
-        const errorData = await response.json();
-        showToasterMessage(errorData.message || 'Error al crear el usuario', 'error');
       }
     } catch (error) {
       console.error('Error creating user:', error);

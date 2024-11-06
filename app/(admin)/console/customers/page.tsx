@@ -6,33 +6,13 @@ import CreateUserForm from '@/app/(admin)/components/Users/CreateUserForm';
 import EditUserForm from '@/app/(admin)/components/Users/EditUserForm';
 import LoadMoreData from '@/app/(admin)/components/LoadMoreData';
 import Toaster from '@/components/Toaster';
-
-interface UserListItem {
-    id: string;
-    name: string;
-    last_name: string;
-    email: string;
-    user_role: string;
-    is_active: boolean;
-}
-
-interface CustomerInfo {
-    identification: string | null;
-    phone: string | null;
-    address: string | null;
-    cityId: number | null,
-    cityText: string | null;
-}
-
-interface UserForEdit {
-    id: string;
-    name: string;
-    lastName: string;
-    email: string;
-    userRole: string;
-    isActive: boolean;
-    customerInfo: CustomerInfo
-}
+import { 
+    UserListItem, 
+    UserForEdit,
+    fetchUsersServer,
+    fetchUserDetailsServer,
+    toggleUserActiveServer
+} from '@/app/(admin)/actions/users';
 
 const UsersAdminPage = () => {
     const [users, setUsers] = useState<UserListItem[]>([]);
@@ -57,18 +37,12 @@ const UsersAdminPage = () => {
         setShowToaster(true);
     }, []);
 
-    const fetchUsers = useCallback(async (loadMore = false, search = '') => {
+    const loadUsers = useCallback(async (loadMore = false, search = '') => {
         setIsLoading(true);
         const currentPage = loadMore ? pageRef.current + 1 : 1;
         try {
-            const queryParams = new URLSearchParams({
-                page: currentPage.toString(),
-                ...(search && { search })
-            });
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users?${queryParams}`, {
-                credentials: 'include'
-            });
-            const data = await response.json();
+            const data = await fetchUsersServer(currentPage, search);
+            
             if (loadMore) {
                 setUsers(prevUsers => [...prevUsers, ...data.users]);
                 setPage(currentPage);
@@ -86,72 +60,52 @@ const UsersAdminPage = () => {
     }, [showToasterMessage]);
 
     useEffect(() => {
-        fetchUsers(false, searchTerm);
-    }, [fetchUsers, searchTerm]);
+        loadUsers(false, searchTerm);
+    }, [loadUsers, searchTerm]);
 
     const handleCreateUser = () => {
         setShowCreateForm(true);
     };
 
-    const handleEditUser = (user: UserListItem) => {
-        fetchUserDetails(user.id);
-    };
-
-    const fetchUserDetails = async (userId: string) => {
+    const handleEditUser = async (user: UserListItem) => {
         try {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users/${userId}`, {
-                credentials: 'include'
-            });
-            if (response.ok) {
-                const userData: UserForEdit = await response.json();
-                setEditingUser(userData);
-            } else {
-                showToasterMessage('Error al obtener los detalles del usuario', 'error');
-            }
+            const userData = await fetchUserDetailsServer(user.id);
+            setEditingUser(userData);
         } catch (error) {
             console.error('Error fetching user details:', error);
-            showToasterMessage('Error al conectar con el servidor', 'error');
+            showToasterMessage('Error al obtener los detalles del usuario', 'error');
         }
     };
 
     const handleCloseForm = () => {
         setShowCreateForm(false);
         setEditingUser(null);
-        fetchUsers(false, searchTerm);
+        loadUsers(false, searchTerm);
     };
 
     const handleLoadMore = () => {
-        fetchUsers(true, searchTerm);
+        loadUsers(true, searchTerm);
     };
 
     const handleToggleActive = async (userId: string, currentStatus: boolean) => {
         try {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users/${userId}/toggle-active`, {
-                method: 'PATCH',
-                credentials: 'include',
-            });
-
-            if (response.ok) {
+            const success = await toggleUserActiveServer(userId);
+            
+            if (success) {
                 setUsers(users.map(user =>
                     user.id === userId ? { ...user, is_active: !currentStatus } : user
                 ));
-                showToasterMessage(`Usuario ${currentStatus ? 'desactivado' : 'activado'} exitosamente`, 'success');
+                showToasterMessage(
+                    `Usuario ${currentStatus ? 'desactivado' : 'activado'} exitosamente`,
+                    'success'
+                );
             } else {
-                showToasterMessage('Error al cambiar el estado del usuario', 'error');
+                throw new Error('Failed to toggle user status');
             }
         } catch (error) {
             console.error('Error toggling user status:', error);
-            showToasterMessage('Error al conectar con el servidor', 'error');
+            showToasterMessage('Error al cambiar el estado del usuario', 'error');
         }
-    };
-
-    const handleSearch = () => {
-        fetchUsers(false, searchTerm);
-    };
-
-    const handleResetSearch = () => {
-        setSearchTerm('');
-        fetchUsers(false, '');
     };
 
     return (
@@ -181,34 +135,49 @@ const UsersAdminPage = () => {
                     className="border p-2 mr-2 rounded"
                 />
                 <button
-                    onClick={handleSearch}
+                    onClick={() => loadUsers(false, searchTerm)}
                     className="bg-blue-500 text-white p-2 rounded mr-2"
                 >
                     <FaSearch />
                 </button>
                 <button
-                    onClick={handleResetSearch}
+                    onClick={() => {
+                        setSearchTerm('');
+                        loadUsers(false, '');
+                    }}
                     className="bg-gray-300 text-gray-700 p-2 rounded"
                 >
                     Resetear
                 </button>
             </div>
             <div className="space-y-4">
-                {users.map(user => (
-                    <UserCard
-                        key={user.id}
-                        user={user}
-                        onEdit={() => handleEditUser(user)}
-                        onToggleActive={() => handleToggleActive(user.id, user.is_active)}
-                    />
-                ))}
+                {isLoading && users.length === 0 ? (
+                    <p>Cargando usuarios...</p>
+                ) : users.length === 0 ? (
+                    <p>No hay usuarios para mostrar</p>
+                ) : (
+                    users.map(user => (
+                        <UserCard
+                            key={user.id}
+                            user={user}
+                            onEdit={() => handleEditUser(user)}
+                            onToggleActive={() => handleToggleActive(user.id, user.is_active)}
+                        />
+                    ))
+                )}
             </div>
-            <LoadMoreData onLoadMore={handleLoadMore} isLoading={isLoading} hasMore={hasMore} />
+            {users.length > 0 && (
+                <LoadMoreData onLoadMore={handleLoadMore} isLoading={isLoading} hasMore={hasMore} />
+            )}
             {showCreateForm && (
                 <CreateUserForm onClose={handleCloseForm} showToasterMessage={showToasterMessage} />
             )}
             {editingUser && (
-                <EditUserForm user={editingUser} onClose={handleCloseForm} showToasterMessage={showToasterMessage} />
+                <EditUserForm 
+                    user={editingUser} 
+                    onClose={handleCloseForm} 
+                    showToasterMessage={showToasterMessage} 
+                />
             )}
         </div>
     );
