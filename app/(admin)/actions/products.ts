@@ -31,6 +31,23 @@ interface Category {
   level?: number;
 }
 
+export interface Rating {
+  id: string;
+  product_name: string;
+  rating: number;
+  comment: string;
+  user_name: string;
+  created_at: string;
+}
+
+export interface RatingsResponse {
+  ratings: Rating[];
+  totalRatings: number;
+  totalPages: number;
+  currentPage: number;
+  limit: number;
+}
+
 // Obtener productos con filtros y paginación
 export async function fetchProductsServer(
   page: number,
@@ -118,5 +135,53 @@ export async function mergeProductsServer(productIds: string[]): Promise<boolean
   } catch (error) {
     console.error('Error in mergeProductsServer server action:', error);
     throw error;
+  }
+}
+
+
+export async function fetchPendingRatingsServer(page: number): Promise<RatingsResponse> {
+  try {
+      const response = await fetch(
+          `${process.env.API_BASE_URL}/rating/moderate?page=${page}`,
+          {
+              credentials: 'include',
+              headers: {
+                  'Cookie': cookies().toString() || ''
+              }
+          }
+      );
+
+      if (!response.ok) {
+          throw new Error('Failed to fetch ratings');
+      }
+
+      return await response.json();
+  } catch (error) {
+      console.error('Error in fetchPendingRatingsServer:', error);
+      throw error;
+  }
+}
+
+export async function approveRatingServer(ratingId: string): Promise<boolean> {
+  try {
+      const response = await fetch(
+          `${process.env.API_BASE_URL}/rating/${ratingId}/approve`,
+          {
+              method: 'PATCH',
+              credentials: 'include',
+              headers: {
+                  'Cookie': cookies().toString() || ''
+              }
+          }
+      );
+
+      if (!response.ok) {
+          throw new Error('Failed to approve rating');
+      }
+
+      return true;
+  } catch (error) {
+      console.error('Error in approveRatingServer:', error);
+      throw error;
   }
 }
