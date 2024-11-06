@@ -5,16 +5,7 @@ import { FaPlus } from 'react-icons/fa';
 import BannerCard from '@/app/(admin)/components/banners/BannerCard';
 import LoadMoreData from '@/app/(admin)/components/LoadMoreData';
 import Toaster from '@/components/Toaster';
-
-interface Banner {
-  id: string;
-  title: string;
-  link: string;
-  order_index: number;
-  is_active: boolean;
-  platform: 'web' | 'mobile';
-  image_data: string;
-}
+import { Banner, fetchBannersServer, toggleBannerActiveServer } from '@/app/(admin)/actions/banners';
 
 const BannersAdminPage = () => {
   const [banners, setBanners] = useState<Banner[]>([]);
@@ -24,7 +15,6 @@ const BannersAdminPage = () => {
   const [toasterMessage, setToasterMessage] = useState('');
   const [toasterType, setToasterType] = useState<'success' | 'error'>('success');
   const [showToaster, setShowToaster] = useState(false);
-  const [updateTrigger, setUpdateTrigger] = useState(0);
   const router = useRouter();
   const pageRef = useRef(page);
   const isLoadingRef = useRef(isLoading);
@@ -43,16 +33,13 @@ const BannersAdminPage = () => {
     setShowToaster(true);
   }, []);
 
-  const fetchBanners = useCallback(async (loadMore = false) => {
+  const loadBanners = useCallback(async (loadMore = false) => {
     if (isLoadingRef.current) return;
     setIsLoading(true);
     try {
       const currentPage = loadMore ? pageRef.current + 1 : 1;
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/banners/admin?page=${currentPage}`, {
-        credentials: 'include',
-        cache: 'no-store'
-      });
-      const data = await response.json();
+      const data = await fetchBannersServer(currentPage);
+      
       if (loadMore) {
         setBanners(prevBanners => [...prevBanners, ...data.banners]);
         setPage(currentPage);
@@ -70,8 +57,8 @@ const BannersAdminPage = () => {
   }, [showToasterMessage]);
 
   useEffect(() => {
-    fetchBanners();
-  }, [fetchBanners, updateTrigger]);
+    loadBanners();
+  }, [loadBanners]);
 
   const handleCreateBanner = () => {
     router.push('/console/banners/banner');
@@ -83,35 +70,22 @@ const BannersAdminPage = () => {
 
   const handleToggleActive = async (id: string, currentStatus: boolean) => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/banners/${id}/toggle`, {
-        method: 'PATCH',
-        credentials: 'include',
-      });
-
-      if (response.ok) {
-        const updatedBanner = await response.json();
-        setBanners(prevBanners =>
-          prevBanners.map(banner =>
-            banner.id === id ? { ...banner, is_active: updatedBanner.is_active } : banner
-          )
-        );
-        showToasterMessage(`Banner ${updatedBanner.is_active ? 'activado' : 'desactivado'} exitosamente`, 'success');
-        setUpdateTrigger(prev => prev + 1); // Forzar una actualización
-      } else {
-        const errorData = await response.json();
-        showToasterMessage(errorData.message || 'Error al cambiar el estado del banner', 'error');
-      }
+      const updatedBanner = await toggleBannerActiveServer(id);
+      setBanners(prevBanners =>
+        prevBanners.map(banner =>
+          banner.id === id ? { ...banner, is_active: updatedBanner.is_active } : banner
+        )
+      );
+      showToasterMessage(
+        `Banner ${updatedBanner.is_active ? 'activado' : 'desactivado'} exitosamente`,
+        'success'
+      );
+      loadBanners();
     } catch (error) {
       console.error('Error toggling banner status:', error);
-      showToasterMessage('Error al conectar con el servidor', 'error');
+      showToasterMessage('Error al cambiar el estado del banner', 'error');
     }
   };
-
-  const handleLoadMore = useCallback(() => {
-    if (!isLoadingRef.current && hasMore) {
-      fetchBanners(true);
-    }
-  }, [hasMore, fetchBanners]);
 
   return (
     <div className="p-6 relative">
@@ -134,16 +108,24 @@ const BannersAdminPage = () => {
         </button>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {banners.map(banner => (
-          <BannerCard
-            key={banner.id}
-            banner={banner}
-            onEdit={() => handleEditBanner(banner.id)}
-            onToggleActive={() => handleToggleActive(banner.id, banner.is_active)}
-          />
-        ))}
+        {isLoading && banners.length === 0 ? (
+          <p>Cargando banners...</p>
+        ) : banners.length === 0 ? (
+          <p>No hay banners para mostrar</p>
+        ) : (
+          banners.map(banner => (
+            <BannerCard
+              key={banner.id}
+              banner={banner}
+              onEdit={() => handleEditBanner(banner.id)}
+              onToggleActive={() => handleToggleActive(banner.id, banner.is_active)}
+            />
+          ))
+        )}
       </div>
-      <LoadMoreData onLoadMore={handleLoadMore} isLoading={isLoading} hasMore={hasMore} />
+      {banners.length > 0 && (
+        <LoadMoreData onLoadMore={loadBanners} isLoading={isLoading} hasMore={hasMore} />
+      )}
     </div>
   );
 };
