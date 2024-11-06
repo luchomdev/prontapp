@@ -5,6 +5,7 @@ import { FaInfoCircle } from 'react-icons/fa';
 import { validateEmail } from '@/lib/validator';
 import Toaster from '@/components/Toaster';
 import ColFlag from '@/components/ColFlag';
+import { signUpServer } from '@/app/actions/auth';
 
 const RegisterForm: React.FC = () => {
   const router = useRouter();
@@ -51,27 +52,20 @@ const RegisterForm: React.FC = () => {
     setIsSubmitting(true);
 
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users/signup`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          ...formData,
-          roleName: 'normal_user'
-        }),
+      const result = await signUpServer({
+        ...formData,
+        roleName: 'normal_user'
       });
 
-      if (!response.ok) {
-        throw new Error('Registration failed');
-      }
-
-      setToastMessage('Usuario registrado exitosamente');
-      setToastType('success');
+      setToastMessage(result.message);
+      setToastType(result.success ? 'success' : 'error');
       setShowToast(true);
-      setTimeout(() => router.push('/signin'), 3000);
+
+      if (result.success) {
+        setTimeout(() => router.push('/signin'), 3000);
+      }
     } catch (error) {
-      setToastMessage('Error al registrar el usuario');
+      setToastMessage('Error al conectar con el servidor');
       setToastType('error');
       setShowToast(true);
     } finally {
