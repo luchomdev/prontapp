@@ -8,23 +8,12 @@ import ProductFilter from '@/app/(admin)/components/Products/ProductFilter';
 import LoadMoreData from '@/app/(admin)/components/LoadMoreData';
 import Toaster from '@/components/Toaster';
 import { useStore } from '@/stores/cartStore';
+import { 
+  Product, 
+  fetchProductsServer, 
+  mergeProductsServer 
+} from '@/app/(admin)/actions/products';
 
-interface Product {
-    id: string;
-    name: string;
-    stock_id: string;
-    product_id: string;
-    amount: number;
-    price_by_unit: number | string | null;
-    price_dropshipping: number | string;
-    images: string;
-    merge_by: string | null;
-    discount: number | string | null;
-    precio_final: number | string | null;
-    category_name: string;
-    average_rating: number | string | null;
-    rating_count: number | string;
-}
 
 interface FilterParams {
     stockId: string | null;
@@ -86,33 +75,23 @@ const ProductsAdminPage = () => {
 
         const currentPage = loadMore ? pageRef.current + 1 : 1;
         try {
-            const queryParams = new URLSearchParams({
-                page: currentPage.toString(),
-                limit: limit.toString(),
-                ...(filterParams.stockId && { stockId: filterParams.stockId }),
-                ...(filterParams.search && { search: filterParams.search }),
-                ...(filterParams.category_id && { category_id: filterParams.category_id }),
-            });
-
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/products?${queryParams}`, {
-                credentials: 'include'
-            });
-            if (response.status === 401) {
-                handleSessionExpired();
-                return;
-            }
-
-            if (!response.ok) {
-                throw new Error('Error en la respuesta del servidor');
-            }
-
-            const data = await response.json();
+            const data = await fetchProductsServer(
+                currentPage,
+                limit,
+                filterParams.stockId,
+                filterParams.search,
+                filterParams.category_id
+            );
 
             setProducts(prevProducts => loadMore ? [...prevProducts, ...data.products] : data.products);
             setPage(currentPage);
             setTotalPages(data.totalPages);
             setHasMore(currentPage < data.totalPages);
-        } catch (error) {
+        } catch (error: any) {
+            if (error.message === '401') {
+                handleSessionExpired();
+                return;
+            }
             console.error('Error fetching products:', error);
             setToasterMessage('Error al cargar los productos. Por favor, intente nuevamente.');
             setToasterType('error');
@@ -141,20 +120,17 @@ const ProductsAdminPage = () => {
 
         setIsGrouping(true);
         try {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/products/merge`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                credentials: 'include',
-                body: JSON.stringify({ productIds: productsToGroup }),
-            });
-
-            if (!response.ok) throw new Error('Error al agrupar productos');
-
-            setToasterMessage('Productos agrupados exitosamente');
-            setToasterType('success');
-            setShowToaster(true);
-            clearProductsToGroup();
-            fetchProducts();
+            const success = await mergeProductsServer(productsToGroup);
+            
+            if (success) {
+                setToasterMessage('Productos agrupados exitosamente');
+                setToasterType('success');
+                setShowToaster(true);
+                clearProductsToGroup();
+                fetchProducts();
+            } else {
+                throw new Error('Error al agrupar productos');
+            }
         } catch (error) {
             console.error('Error grouping products:', error);
             setToasterMessage('Error al agrupar productos. Por favor, intente nuevamente.');
