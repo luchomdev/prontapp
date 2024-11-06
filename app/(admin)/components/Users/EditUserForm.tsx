@@ -1,26 +1,12 @@
+"use client"
 import React, { useState, useEffect, useCallback } from 'react';
 import { FaTimes } from 'react-icons/fa';
-
-interface CustomerInfo {
-    identification: string | null;
-    phone: string | null;
-    address: string | null;
-    cityId: number | null,
-    cityText: string | null;
-}
-interface UserForEdit {
-    id: string;
-    name: string;
-    lastName: string;
-    email: string;
-    userRole: string;
-    isActive: boolean;
-    customerInfo: CustomerInfo
-}
-interface City {
-    city_id: number;
-    name: string;
-}
+import {
+  UserForEdit,
+  City,
+  updateUserServer,
+  searchCitiesServer
+} from '@/app/(admin)/actions/users';
 
 interface EditUserFormProps {
   user: UserForEdit;
@@ -28,7 +14,6 @@ interface EditUserFormProps {
   showToasterMessage: (message: string, type: 'success' | 'error') => void;
 }
 
-// Movemos la función debounce fuera del componente
 const debounce = (func: Function, delay: number) => {
   let timeoutId: NodeJS.Timeout;
   return (...args: any[]) => {
@@ -38,94 +23,75 @@ const debounce = (func: Function, delay: number) => {
 };
 
 const EditUserForm: React.FC<EditUserFormProps> = ({ user, onClose, showToasterMessage }) => {
-    const [formData, setFormData] = useState({
-        name: user.name,
-        lastName: user.lastName,
-        email: user.email,
-        identification: user.customerInfo.identification || '',
-        phone: user.customerInfo.phone || '',
-        address: user.customerInfo.address || '',
-        city_id: user.customerInfo.cityId || '',
-        cityText: user.customerInfo.cityText || '',
-    });
-    
-    const [isLoading, setIsLoading] = useState(false);
-    const [isFormValid, setIsFormValid] = useState(true);
-    const [citySearchTerm, setCitySearchTerm] = useState('');
-    const [cityResults, setCityResults] = useState<City[]>([]);
-    const [showCityResults, setShowCityResults] = useState(false);
+  const [formData, setFormData] = useState({
+    name: user.name,
+    lastName: user.lastName,
+    email: user.email,
+    identification: user.customerInfo.identification || '',
+    phone: user.customerInfo.phone || '',
+    address: user.customerInfo.address || '',
+    city_id: user.customerInfo.cityId || '',
+    cityText: user.customerInfo.cityText || '',
+  });
 
-    useEffect(() => {
-        const { name, lastName, email } = formData;
-        setIsFormValid(name.trim() !== '' && lastName.trim() !== '' && email.trim() !== '');
-    }, [formData]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isFormValid, setIsFormValid] = useState(true);
+  const [cityResults, setCityResults] = useState<City[]>([]);
+  const [showCityResults, setShowCityResults] = useState(false);
 
-    const searchCities = useCallback((term: string) => {
-        if (term.length < 3) return;
-        const fetchCities = async () => {
-            try {
-                const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/locations/search-cities?search=${term}`, {
-                    credentials: 'include',
-                });
-                if (response.ok) {
-                    const cities = await response.json();
-                    setCityResults(cities);
-                    setShowCityResults(true);
-                }
-            } catch (error) {
-                console.error('Error searching cities:', error);
-            }
-        };
-        debounce(fetchCities, 300)();
-    }, []);
+  useEffect(() => {
+    const { name, lastName, email } = formData;
+    setIsFormValid(name.trim() !== '' && lastName.trim() !== '' && email.trim() !== '');
+  }, [formData]);
 
-    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const { name, value } = e.target;
-        setFormData(prev => ({ ...prev, [name]: value }));
-        if (name === 'cityText') {
-            setCitySearchTerm(value);
-            searchCities(value);
-        }
-    };
+  const searchCities = useCallback(async (term: string) => {
+    if (term.length < 3) return;
 
-    const handleCitySelect = (city: City) => {
-        setFormData(prev => ({
-            ...prev,
-            city_id: city.city_id,
-            cityText: city.name,
-        }));
-        setShowCityResults(false);
-    };
+    try {
+      const cities = await searchCitiesServer(term);
+      setCityResults(cities);
+      setShowCityResults(true);
+    } catch (error) {
+      console.error('Error searching cities:', error);
+    }
+  }, []);
 
-    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-        e.preventDefault();
-        setIsLoading(true);
-        try {
-            const { cityText, ...dataToSend } = formData;
-    
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users/${user.id}`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(dataToSend), 
-                credentials: 'include',
-            });
-            
-            if (response.ok) {
-                showToasterMessage('Usuario actualizado exitosamente', 'success');
-                onClose();
-            } else {
-                const errorData = await response.json();
-                showToasterMessage(errorData.message || 'Error al actualizar el usuario', 'error');
-            }
-        } catch (error) {
-            console.error('Error updating user:', error);
-            showToasterMessage('Error al conectar con el servidor', 'error');
-        } finally {
-            setIsLoading(false);
-        }
-    };
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+    if (name === 'cityText') {
+      debounce(() => searchCities(value), 300)();
+    }
+  };
+
+  const handleCitySelect = (city: City) => {
+    setFormData(prev => ({
+      ...prev,
+      city_id: city.city_id,
+      cityText: city.name,
+    }));
+    setShowCityResults(false);
+  };
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setIsLoading(true);
+    try {
+      const { cityText, ...dataToSend } = formData;
+      const result = await updateUserServer(user.id, dataToSend);
+
+      showToasterMessage(result.message, result.success ? 'success' : 'error');
+
+      if (result.success) {
+        onClose();
+      }
+    } catch (error) {
+      console.error('Error updating user:', error);
+      showToasterMessage('Error al conectar con el servidor', 'error');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full">
@@ -176,7 +142,7 @@ const EditUserForm: React.FC<EditUserFormProps> = ({ user, onClose, showToasterM
           <div className="mb-4">
             <label className="block text-sm font-medium text-gray-700">Identificación</label>
             <input
-            autoComplete="off"
+              autoComplete="off"
               type="text"
               name="identification"
               value={formData.identification}
