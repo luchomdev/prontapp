@@ -1,5 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import { 
+  fetchBannerByIdServer, 
+  updateBannerServer 
+} from '@/app/(admin)/actions/banners';
 
 interface EditBannerFormProps {
   bannerId: string;
@@ -17,32 +21,25 @@ const EditBannerForm: React.FC<EditBannerFormProps> = ({ bannerId }) => {
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
 
-  const fetchBannerData = useCallback(async () => {
+  const loadBannerData = useCallback(async () => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/banners/admin/${bannerId}`, {
-        credentials: 'include',
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setFormData(prev => ({
-          ...prev,
-          title: data.title,
-          link: data.link,
-          orderIndex: data.order_index,
-          isActive: data.is_active,
-          platform: data.platform,
-        }));
-      } else {
-        console.error('Error fetching banner data');
-      }
+      const data = await fetchBannerByIdServer(bannerId);
+      setFormData(prev => ({
+        ...prev,
+        title: data.title,
+        link: data.link,
+        orderIndex: data.order_index,
+        isActive: data.is_active,
+        platform: data.platform,
+      }));
     } catch (error) {
       console.error('Error fetching banner data:', error);
     }
   }, [bannerId]);
 
   useEffect(() => {
-    fetchBannerData();
-  }, [fetchBannerData]);
+    loadBannerData();
+  }, [loadBannerData]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
@@ -73,16 +70,12 @@ const EditBannerForm: React.FC<EditBannerFormProps> = ({ bannerId }) => {
     }
 
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/banners/${bannerId}`, {
-        method: 'PUT',
-        body: formDataToSend,
-        credentials: 'include',
-      });
-
-      if (response.ok) {
+      const success = await updateBannerServer(bannerId, formDataToSend);
+      
+      if (success) {
         router.push('/console/banners');
       } else {
-        console.error('Error updating banner:', await response.text());
+        throw new Error('Failed to update banner');
       }
     } catch (error) {
       console.error('Error updating banner:', error);

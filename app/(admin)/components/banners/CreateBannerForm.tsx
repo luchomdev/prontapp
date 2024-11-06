@@ -1,5 +1,7 @@
+"use client"
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { createBannerServer } from '@/app/(admin)/actions/banners';
 
 const CreateBannerForm: React.FC = () => {
     const [formData, setFormData] = useState({
@@ -37,16 +39,12 @@ const CreateBannerForm: React.FC = () => {
         }
 
         try {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/banners/`, {
-                method: 'POST',
-                body: formDataToSend,
-                credentials: 'include',
-            });
-
-            if (response.ok) {
+            const success = await createBannerServer(formDataToSend);
+            
+            if (success) {
                 router.push('/console/banners');
             } else {
-                console.error('Error creating banner:', await response.text());
+                throw new Error('Failed to create banner');
             }
         } catch (error) {
             console.error('Error creating banner:', error);
@@ -57,7 +55,6 @@ const CreateBannerForm: React.FC = () => {
 
     return (
         <form onSubmit={handleSubmit} className="space-y-4">
-            {/* <div>{JSON.stringify(formData)}</div> */}
             <div>
                 <label htmlFor="title" className="block text-sm font-medium text-gray-700">Título</label>
                 <input
