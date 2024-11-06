@@ -7,27 +7,13 @@ import AdminCustomerInfo from '@/app/(admin)/components/orders/AdminCustomerInfo
 import AdminOrderProducts from '@/app/(admin)/components/orders/AdminOrderProducts';
 import AdminShippingInfo from '@/app/(admin)/components/orders/AdminShippingInfo';
 import Link from 'next/link';
+import { OrderDetail, fetchOrderDetailServer } from '@/app/(admin)/actions/order';
 
 import OrderInfoSkeleton from '@/components/panel/skeletons/OrderInfoSkeleton';
 import CustomerInfoSkeleton from '@/components/panel/skeletons/CustomerInfoSkeleton';
 import OrderProductsSkeleton from '@/components/panel/skeletons/OrderProductsSkeleton';
 import ShippingInfoSkeleton from '@/components/panel/skeletons/ShippingInfoSkeleton';
 
-interface OrderDetail {
-    order_id: number;
-    delivery_state_description: string;
-    delivery_state: number;
-    created_at: string;
-    payment: number;
-    customer: any;
-    stocks: any;
-    total_shipping_cost: string | null;
-    id: string;
-    guide_state_description: string | null;
-    guide_histories: Array<{ created_at: string; description: string }> | null;
-    guide_id: number | null;
-    last_state: number | null;
-}
 
 const AdminOrderDetailPage: React.FC = () => {
     const params = useParams();
@@ -35,15 +21,13 @@ const AdminOrderDetailPage: React.FC = () => {
     const [orderData, setOrderData] = useState<OrderDetail | null>(null);
     const [isLoading, setIsLoading] = useState(true);
 
-    const fetchOrderDetail = useCallback(async () => {
+    const loadOrderDetail = useCallback(async () => {
+        if (!params.id) return;
+        
         setIsLoading(true);
         try {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/orders?order_id=${params.id}`, {
-                credentials: 'include'
-            });
-            if (!response.ok) throw new Error('Failed to fetch order details');
-            const data = await response.json();
-            setOrderData(data.orders[0]);
+            const data = await fetchOrderDetailServer(params.id as string);
+            setOrderData(data);
         } catch (error) {
             console.error('Error fetching order details:', error);
         } finally {
@@ -52,10 +36,8 @@ const AdminOrderDetailPage: React.FC = () => {
     }, [params.id]);
 
     useEffect(() => {
-        if (params.id) {
-            fetchOrderDetail();
-        }
-    }, [params.id, fetchOrderDetail]);
+        loadOrderDetail();
+    }, [loadOrderDetail]);
 
     useEffect(() => {
         if (orderData) {
