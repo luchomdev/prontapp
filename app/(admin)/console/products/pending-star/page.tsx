@@ -4,15 +4,11 @@ import Link from "next/link"
 import { useRouter } from 'next/navigation';
 import Toaster from '@/components/Toaster';
 import LoadMoreData from '@/app/(admin)/components/LoadMoreData';
-
-interface Rating {
-    id: string;
-    product_name: string;
-    rating: number;
-    comment: string;
-    user_name: string;
-    created_at: string;
-}
+import { 
+    Rating, 
+    fetchPendingRatingsServer, 
+    approveRatingServer 
+} from '@/app/(admin)/actions/products';
 
 interface PaginationInfo {
     totalRatings: number;
@@ -35,19 +31,19 @@ const PendingRatingsPage: React.FC = () => {
     const [toastType, setToastType] = useState<'success' | 'error'>('success');
     const router = useRouter();
 
-    const fetchRatings = useCallback(async (page: number = 1) => {
-        setIsLoading(true);
+    const loadRatings = useCallback(async (page: number = 1) => {
+        const loadingState = page === 1 ? setIsLoading : setIsLoadingMore;
+        loadingState(true);
+        
         try {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/rating/moderate?page=${page}`, {
-                credentials: 'include'
-            });
-            if (!response.ok) throw new Error('Failed to fetch ratings');
-            const data = await response.json();
+            const data = await fetchPendingRatingsServer(page);
+            
             if (page === 1) {
                 setRatings(data.ratings);
             } else {
                 setRatings(prevRatings => [...prevRatings, ...data.ratings]);
             }
+            
             setPaginationInfo({
                 totalRatings: data.totalRatings,
                 totalPages: data.totalPages,
@@ -59,39 +55,38 @@ const PendingRatingsPage: React.FC = () => {
             setToastMessage('Error al cargar las valoraciones');
             setToastType('error');
         } finally {
-            setIsLoading(false);
-            setIsLoadingMore(false);
+            loadingState(false);
         }
     }, []);
 
     useEffect(() => {
-        fetchRatings();
-    }, [fetchRatings]);
+        loadRatings();
+    }, [loadRatings]);
 
     const handleLoadMore = () => {
         if (paginationInfo.currentPage < paginationInfo.totalPages) {
-            setIsLoadingMore(true);
-            fetchRatings(paginationInfo.currentPage + 1);
+            loadRatings(paginationInfo.currentPage + 1);
         }
     };
 
     const handleApprove = async (id: string) => {
         try {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/rating/${id}/approve`, {
-                method: 'PATCH',
-                credentials: 'include'
-            });
-            if (!response.ok) throw new Error('Failed to approve rating');
-            setToastMessage('Valoración aprobada exitosamente');
-            setToastType('success');
-            setRatings(prevRatings => prevRatings.filter(rating => rating.id !== id));
-            setPaginationInfo(prev => ({
-                ...prev,
-                totalRatings: prev.totalRatings - 1
-            }));
-            setTimeout(() => {
-                router.push('/console/products');
-            }, 2000);
+            const success = await approveRatingServer(id);
+            
+            if (success) {
+                setToastMessage('Valoración aprobada exitosamente');
+                setToastType('success');
+                setRatings(prevRatings => prevRatings.filter(rating => rating.id !== id));
+                setPaginationInfo(prev => ({
+                    ...prev,
+                    totalRatings: prev.totalRatings - 1
+                }));
+                setTimeout(() => {
+                    router.push('/console/products');
+                }, 2000);
+            } else {
+                throw new Error('Failed to approve rating');
+            }
         } catch (error) {
             console.error('Error approving rating:', error);
             setToastMessage('Error al aprobar la valoración');
