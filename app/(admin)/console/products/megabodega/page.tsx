@@ -6,23 +6,11 @@ import MegaProductCard from '@/app/(admin)/components/Products/MegaProductCard';
 import MegaProductFilter from '@/app/(admin)/components/Products/MegaProductFilter';
 import MegaLoadMoreData from '@/app/(admin)/components/MegaLoadMoreData';
 import Toaster from '@/components/Toaster';
-
-interface MegaProduct {
-    id: string;
-    name: string;
-    product_id: string;
-    cellar_id: number;
-    reference:string;
-    amount: number;
-    price_by_unit: number | string | null;
-    price_dropshipping: number | string;
-    images: string;
-    discount: number | string | null;
-    description: string;
-    measures: string;
-    video:string;
-    warranty:string;
-}
+import { 
+    MegaProduct, 
+    fetchMegaProductsServer, 
+    importMegaProductServer 
+} from '@/app/(admin)/actions/megabodega';
 
 interface FilterParams {
     search: string;
@@ -64,21 +52,9 @@ const MegaBodegaPage = () => {
 
         setIsLoading(true);
         const currentPage = loadMore ? pageRef.current + 1 : 1;
+        
         try {
-            const queryParams = new URLSearchParams({
-                page: currentPage.toString(),
-                ...filterParams
-            });
-
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/products/hoko-products?${queryParams}`, {
-                credentials: 'include'
-            });
-
-            if (!response.ok) {
-                throw new Error('Error en la respuesta del servidor');
-            }
-
-            const data = await response.json();
+            const data = await fetchMegaProductsServer(currentPage, filterParams);
             
             setProducts(prevProducts => loadMore ? [...prevProducts, ...data.data] : data.data);
             setPage(currentPage);
@@ -112,30 +88,21 @@ const MegaBodegaPage = () => {
     const handleImport = useCallback(async (product: MegaProduct) => {
         setImportingProducts(prev => ({ ...prev, [product.id]: true }));
         try {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/products/import-hoko-products`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                credentials: 'include',
-                body: JSON.stringify({ products: [product] }),
-            });
-
-            if (!response.ok) {
+            const success = await importMegaProductServer(product);
+            
+            if (success) {
+                setToasterMessage('Producto importado exitosamente');
+                setToasterType('success');
+            } else {
                 throw new Error('Error al importar el producto');
             }
-
-            setToasterMessage('Producto importado exitosamente');
-            setToasterType('success');
-            setShowToaster(true);
-            
         } catch (error) {
             console.error('Error importing product:', error);
             setToasterMessage('Error al importar el producto. Por favor, intente nuevamente.');
             setToasterType('error');
-            setShowToaster(true);
         } finally {
             setImportingProducts(prev => ({ ...prev, [product.id]: false }));
+            setShowToaster(true);
         }
     }, []);
 
