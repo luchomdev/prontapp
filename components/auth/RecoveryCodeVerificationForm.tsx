@@ -3,6 +3,10 @@ import React, { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from "next/navigation";
 import Toaster from '@/components/Toaster';
 import { useAuthCheck } from "@/hooks/useAuthCheck";
+import { 
+  verifyRecoveryCodeServer, 
+  requestPasswordRecoveryServer 
+} from '@/app/actions/forgotpass';
 
 const RecoveryCodeVerificationForm: React.FC = () => {
 
@@ -44,31 +48,19 @@ const RecoveryCodeVerificationForm: React.FC = () => {
     setIsSubmitting(true);
 
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users/verify-reset`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email, code }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to verify code');
-      }
-
-      const data = await response.json();
-      console.log("DATA response from /users/verify-reset", data)
-      setToastMessage('Código verificado correctamente');
-      setToastType('success');
+      const result = await verifyRecoveryCodeServer(email, code);
+      
+      setToastMessage(result.message);
+      setToastType(result.success ? 'success' : 'error');
       setShowToast(true);
 
-      // Redirigir al usuario a la página de cambio de contraseña
-      setTimeout(() => {
-        router.push(`/reset-password?email=${encodeURIComponent(email)}&token=${encodeURIComponent(data.token)}`);
-      }, 3000);
-
+      if (result.success && result.token) {
+        setTimeout(() => {
+          router.push(`/reset-password?email=${encodeURIComponent(email)}&token=${encodeURIComponent(result.token)}`);
+        }, 3000);
+      }
     } catch (error) {
-      setToastMessage('Error al verificar el código');
+      setToastMessage('Error al conectar con el servidor');
       setToastType('error');
       setShowToast(true);
     } finally {
@@ -80,25 +72,17 @@ const RecoveryCodeVerificationForm: React.FC = () => {
     setIsSubmitting(true);
 
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users/request-reset`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to resend verification code');
-      }
-
-      setToastMessage('Se ha enviado un nuevo código de verificación');
-      setToastType('success');
+      const result = await requestPasswordRecoveryServer(email);
+      
+      setToastMessage(result.message);
+      setToastType(result.success ? 'success' : 'error');
       setShowToast(true);
-      setTimeLeft(300); // Reiniciar el contador
 
+      if (result.success) {
+        setTimeLeft(300); // Reiniciar el contador
+      }
     } catch (error) {
-      setToastMessage('Error al reenviar el código');
+      setToastMessage('Error al conectar con el servidor');
       setToastType('error');
       setShowToast(true);
     } finally {

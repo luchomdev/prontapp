@@ -4,6 +4,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
 import Toaster from '@/components/Toaster';
 import { useAuthCheck } from '@/hooks/useAuthCheck';
+import { resetPasswordServer } from '@/app/actions/forgotpass';
 
 const ResetPasswordForm: React.FC = () => {
   const router = useRouter();
@@ -41,28 +42,19 @@ const ResetPasswordForm: React.FC = () => {
     setIsSubmitting(true);
 
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users/reset-password`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email, newPassword, token }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to reset password');
-      }
-
-      setToastMessage('Contraseña restablecida con éxito');
-      setToastType('success');
+      const result = await resetPasswordServer(email, newPassword, token);
+      
+      setToastMessage(result.message);
+      setToastType(result.success ? 'success' : 'error');
       setShowToast(true);
 
-      setTimeout(() => {
-        router.push('/signin');
-      }, 3000);
-
+      if (result.success) {
+        setTimeout(() => {
+          router.push('/signin');
+        }, 3000);
+      }
     } catch (error) {
-      setToastMessage('Error al restablecer la contraseña');
+      setToastMessage('Error al conectar con el servidor');
       setToastType('error');
       setShowToast(true);
     } finally {
