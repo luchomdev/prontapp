@@ -6,41 +6,16 @@ import { FaSpinner } from 'react-icons/fa';
 import dynamic from 'next/dynamic';
 import Toaster from '@/components/Toaster';
 import type { MDXEditorMethods } from '@mdxeditor/editor';
+import { 
+    Product, 
+    Category,
+    fetchProductDetailServer, 
+    fetchProductCategoriesServer, 
+    updateProductServer 
+} from '@/app/(admin)/actions/product';
 
-interface Category {
-    id: string;
-    name: string;
-    parent_id: string | null;
-    level?: number;
-}
 
-interface Product {
-    id: string;
-    stock_id: number;
-    cellar_id: number;
-    discount: number | null;
-    amount: number;
-    name: string;
-    description: string;
-    reference: string;
-    minimal_price: string;
-    price_dropshipping: string;
-    price_by_unit: string;
-    images: string;
-    video: string | null;
-    warranty: string;
-    measures: string;
-    merge_by: string | null;
-    category_id: string | null;
-    min_qty: number;
-    seo_keywords: string | null;
-    seo_description: string | null;
-    seo_slug: string | null;
-    average_rating: string;
-    rating_count: string;
-}
-
-// Componente MDXEditor inicializado separadamente para evitar SSR
+// Componente MDXEditor inicializado separadamente para evitar SSR según documentación
 const InitializedMDXEditor = dynamic(
     () => import('./InitializedMDXEditor'),
     { ssr: false }
@@ -66,11 +41,7 @@ const EditProductForm: React.FC = () => {
         if (!id) return;
         setIsLoading(true);
         try {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/products/${id}`, {
-                credentials: 'include',
-            });
-            if (!response.ok) throw new Error('Failed to fetch product');
-            const data = await response.json();
+            const data = await fetchProductDetailServer(id as string);
             setProduct(data);
         } catch (error) {
             console.error('Error fetching product:', error);
@@ -84,12 +55,8 @@ const EditProductForm: React.FC = () => {
 
     const fetchCategories = useCallback(async () => {
         try {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/categories/admin?limit=1000`, {
-                credentials: 'include',
-            });
-            if (!response.ok) throw new Error('Failed to fetch categories');
-            const data = await response.json();
-            setCategories(data.categories);
+            const data = await fetchProductCategoriesServer();
+            setCategories(data);
         } catch (error) {
             console.error('Error fetching categories:', error);
             setToasterMessage('Error al cargar las categorías');
@@ -127,40 +94,33 @@ const EditProductForm: React.FC = () => {
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-        if (!product) return;
+        if (!product || !id) return;
         setIsSaving(true);
         try {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/products/${id}/adjust`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    name: product.name,
-                    description: product.description,
-                    category_id: product.category_id,
-                    discount: product.discount,
-                    min_qty: product.min_qty,
-                    seo_keywords: product.seo_keywords,
-                    seo_description: product.seo_description,
-                    seo_slug: product.seo_slug,
-                    amount: product.amount,
-                }),
-                credentials: 'include',
+            const result = await updateProductServer(id as string, {
+                name: product.name,
+                description: product.description,
+                category_id: product.category_id,
+                discount: product.discount,
+                min_qty: product.min_qty,
+                seo_keywords: product.seo_keywords,
+                seo_description: product.seo_description,
+                seo_slug: product.seo_slug,
+                amount: product.amount,
             });
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.message || 'Failed to update product');
-            }
-            setToasterMessage('Producto actualizado con éxito');
-            setToasterType('success');
+
+            setToasterMessage(result.message);
+            setToasterType(result.success ? 'success' : 'error');
             setShowToaster(true);
-            setTimeout(() => {
-                router.push('/console/products');
-            }, 2000);
+
+            if (result.success) {
+                setTimeout(() => {
+                    router.push('/console/products');
+                }, 2000);
+            }
         } catch (error) {
             console.error('Error updating product:', error);
-            setToasterMessage(error instanceof Error ? error.message : 'Error al actualizar el producto');
+            setToasterMessage('Error al actualizar el producto');
             setToasterType('error');
             setShowToaster(true);
         } finally {
