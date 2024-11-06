@@ -4,29 +4,7 @@ import AdminOrderFilter from '@/app/(admin)/components/orders/AdminOrderFilter';
 import AdminOrderCard from '@/app/(admin)/components/orders/AdminOrderCard';
 import OrderCardSkeleton from '@/components/panel/skeletons/SkeletonOrderCard';
 import LoadMoreData from '@/app/(admin)/components/LoadMoreData';
-
-interface Order {
-    id: string;
-    order_id: number;
-    delivery_state: number;
-    delivery_state_description: string;
-    customer: {
-        name: string;
-        email: string;
-    };
-    stocks: {
-        [key: string]: {
-            amount: number;
-            price: number;
-            id: string;
-            name: string;
-            images: Array<{ image: string; url: string }>;
-        }
-    };
-    created_at: string;
-    payment: 0 | 1;
-    total_shipping_cost: string | null;
-}
+import { Order, fetchOrdersServer } from '@/app/(admin)/actions/orders';
 
 const AdminOrdersPage: React.FC = () => {
     const [orders, setOrders] = useState<Order[]>([]);
@@ -44,49 +22,46 @@ const AdminOrdersPage: React.FC = () => {
         paymentMethod: ''
     });
 
-
-    const fetchOrders = useCallback(async (pageNum: number, isLoadingMore: boolean = false) => {
-        const url = new URL(`${process.env.NEXT_PUBLIC_API_URL}/orders`);
-        url.searchParams.append('page', pageNum.toString());
-        url.searchParams.append('limit', limit.toString());
-        if (filters.startDate) url.searchParams.append('start_date', filters.startDate);
-        if (filters.endDate) url.searchParams.append('end_date', filters.endDate);
-        if (filters.orderId) url.searchParams.append('order_id', filters.orderId);
-        if (filters.status) url.searchParams.append('delivery_state', filters.status);
-        if (filters.paymentMethod) url.searchParams.append('payment', filters.paymentMethod);
+    const loadOrders = useCallback(async (pageNum: number, isLoadingMore: boolean = false) => {
+        const loadingState = isLoadingMore ? setIsLoadingMore : setIsLoading;
+        loadingState(true);
 
         try {
-            const response = await fetch(url.toString(), { credentials: 'include' });
-            if (!response.ok) throw new Error('Failed to fetch orders');
-            const data = await response.json();
+            const data = await fetchOrdersServer(pageNum, limit, filters);
+            
             if (isLoadingMore) {
                 setOrders(prevOrders => [...prevOrders, ...data.orders]);
             } else {
                 setOrders(data.orders);
             }
+            
             setTotalOrders(data.totalOrders);
             setTotalPages(data.totalPages);
             setPage(data.page);
         } catch (error) {
             console.error('Error fetching orders:', error);
         } finally {
-            setIsLoading(false);
-            setIsLoadingMore(false);
+            loadingState(false);
         }
     }, [filters, limit]);
 
     useEffect(() => {
-        fetchOrders(1);
-    }, [fetchOrders]);
+        loadOrders(1);
+    }, [loadOrders]);
 
     const handleLoadMore = () => {
         if (page < totalPages) {
-            setIsLoadingMore(true);
-            fetchOrders(page + 1, true);
+            loadOrders(page + 1, true);
         }
     };
 
-    const handleFilterChange = (start: string, end: string, orderIdFilter: string, statusFilter: string, paymentMethodFilter: string) => {
+    const handleFilterChange = (
+        start: string, 
+        end: string, 
+        orderIdFilter: string, 
+        statusFilter: string, 
+        paymentMethodFilter: string
+    ) => {
         setFilters({
             startDate: start,
             endDate: end,
