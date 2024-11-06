@@ -1,6 +1,8 @@
+"use client"
 import React, { useState, useCallback, useEffect } from 'react';
 import { FaSearch, FaUndo } from 'react-icons/fa';
 import { useRouter } from 'next/navigation';
+import { fetchCategoriesServer } from '@/app/(admin)/actions/products';
 
 interface Category {
     id: string;
@@ -32,29 +34,22 @@ const ProductFilter: React.FC<ProductFilterProps> = ({ onFilterChange }) => {
         }, 3000);
     }, [router]);
 
-    const fetchAllCategories = useCallback(async () => {
+    const loadCategories = useCallback(async () => {
         try {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/categories/admin?limit=1000`, {
-                credentials: 'include',
-            });
-            if (response.status === 401) {
+            const categories = await fetchCategoriesServer();
+            setAllCategories(categories);
+        } catch (error: any) {
+            if (error.message === '401') {
                 handleSessionExpired();
                 return;
             }
-
-            if (!response.ok) {
-                throw new Error('Error fetching categories');
-            }
-            const data = await response.json();
-            setAllCategories(data.categories);
-        } catch (error) {
             console.error('Error fetching all categories:', error);
         }
     }, [handleSessionExpired]);
 
     useEffect(() => {
-        fetchAllCategories();
-    }, [fetchAllCategories]);
+        loadCategories();
+    }, [loadCategories]);
 
     const handleApplyFilter = useCallback(() => {
         const filterParams: FilterParams = {
