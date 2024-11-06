@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Toaster from '@/components/Toaster';
+import { cancelOrderServer } from '@/app/(admin)/actions/order';
 
 interface AdminModalCancelOrderProps {
   order_id: number;
@@ -16,22 +17,19 @@ const AdminModalCancelOrder: React.FC<AdminModalCancelOrderProps> = ({ order_id,
   const handleCancelOrder = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/orders/${order_id}/cancel`, {
-        method: 'POST',
-        credentials: 'include',
-      });
+      const success = await cancelOrderServer(order_id);
 
-      if (!response.ok) {
+      if (success) {
+        setToastMessage('Orden cancelada exitosamente');
+        setToastType('success');
+        
+        // Delay redirect to show the success message
+        setTimeout(() => {
+          router.push('/console/orders');
+        }, 2000);
+      } else {
         throw new Error('Failed to cancel order');
       }
-
-      setToastMessage('Orden cancelada exitosamente');
-      setToastType('success');
-      
-      // Delay redirect to show the success message
-      setTimeout(() => {
-        router.push('/console/orders');
-      }, 2000);
     } catch (error) {
       console.error('Error canceling order:', error);
       setToastMessage('Error al cancelar la orden');
