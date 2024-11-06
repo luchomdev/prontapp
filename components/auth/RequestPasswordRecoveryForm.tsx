@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { useRouter } from "next/navigation";
 import { validateEmail } from '@/lib/validator';
 import Toaster from '@/components/Toaster';
+import { requestPasswordRecoveryServer } from '@/app/actions/forgotpass';
 
 const RequestPasswordRecoveryForm: React.FC = () => {
   const router = useRouter();
@@ -25,29 +26,18 @@ const RequestPasswordRecoveryForm: React.FC = () => {
     setIsSubmitting(true);
 
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users/request-reset`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to request password reset');
-      }
-
-      setToastMessage('Se ha enviado un código de verificación a su correo');
-      setToastType('success');
+      const result = await requestPasswordRecoveryServer(email);
+      setToastMessage(result.message);
+      setToastType(result.success ? 'success' : 'error');
       setShowToast(true);
 
-      // Redirigir al usuario después de 3 segundos
-      setTimeout(() => {
-        router.push(`/recovery-verify-code?email=${encodeURIComponent(email)}`);
-      }, 3000);
-
+      if (result.success) {
+        setTimeout(() => {
+          router.push(`/recovery-verify-code?email=${encodeURIComponent(email)}`);
+        }, 3000);
+      }
     } catch (error) {
-      setToastMessage('Error al solicitar la recuperación de contraseña');
+      setToastMessage('Error al conectar con el servidor');
       setToastType('error');
       setShowToast(true);
     } finally {
