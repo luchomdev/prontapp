@@ -55,16 +55,28 @@ jobs:
           echo "Testing SSH connection to EC2..."
           ssh -v ec2 "pwd && whoami"
           
-          # Then proceed with deployment
-          echo "Pulling latest changes..."
+          # Backup package files
+          echo "Backing up package files..."
           ssh ec2 "cd ${DEPLOY_PATH} && \
+              cp package.json package.json.backup && \
+              cp package-lock.json package-lock.json.backup"
+          
+          # Reset any local changes and pull latest
+          echo "Resetting and pulling latest changes..."
+          ssh ec2 "cd ${DEPLOY_PATH} && \
+              git reset --hard HEAD && \
+              git clean -fd && \
               GIT_SSH_COMMAND=\"ssh -i /home/ubuntu/.ssh/deploy_key_frontend\" git pull origin prod"
           
           echo "Copying environment file..."
           scp -v .env.production ec2:${DEPLOY_PATH}/.env.production
           
+          # Clean install dependencies
           echo "Installing dependencies..."
-          ssh ec2 "cd ${DEPLOY_PATH} && npm install"
+          ssh ec2 "cd ${DEPLOY_PATH} && \
+              rm -rf node_modules && \
+              npm cache clean --force && \
+              npm install"
           
           echo "Building application..."
           ssh ec2 "cd ${DEPLOY_PATH} && npm run build"
