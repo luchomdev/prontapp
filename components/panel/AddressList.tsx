@@ -1,5 +1,6 @@
 import React from 'react';
-import AddressCard from './AddressCard';
+import AddressCard from '@/components/panel/AddressCard';
+import NoData from '@/components/NoData';
 import { Address } from '@/stores/cartStore';
 
 interface AddressListProps {
@@ -15,6 +16,10 @@ const AddressList: React.FC<AddressListProps> = ({
   onSelectAddress,
   defaultAddressId 
 }) => {
+  if (addresses.length === 0) {
+    return <NoData message="No hay direcciones de entrega creadas" />;
+  }
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
       {addresses.map((address) => (

@@ -1,9 +1,10 @@
- "use client"
+"use client"
 import React, { useState } from 'react';
 import PageTitle from '@/components/panel/PageTitle';
 import GuideFilter from '@/components/panel/GuideFilter';
 import ShippingInfo from '@/components/panel/ShippingInfo';
 import ShippingInfoSkeleton from '@/components/panel/skeletons/SkeletonShippingInfo';
+import NoData from '@/components/NoData';
 import { fetchOrderGuide } from '@/app/actions/orders';
 
 interface GuideHistory {
@@ -20,11 +21,12 @@ const GuideTrackingPage: React.FC = () => {
   const [guideData, setGuideData] = useState<GuideData | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [hasSearched, setHasSearched] = useState(false);
 
   const handleSearch = async (orderId: string) => {
     setIsLoading(true);
     setError(null);
-    // Limpiamos el guideData al inicio de cada búsqueda
+    setHasSearched(true);
     setGuideData(null);
     
     try {
@@ -32,14 +34,14 @@ const GuideTrackingPage: React.FC = () => {
       
       if (orderData) {
         setGuideData(orderData);
-        setError(null); // Aseguramos que no haya mensaje de error si hay datos
+        setError(null);
       } else {
-        setGuideData(null); // Aseguramos que no haya datos anteriores
+        setGuideData(null);
         setError('No hay datos de guía para el pedido');
       }
     } catch (error) {
       console.error('Error fetching guide data:', error);
-      setGuideData(null); // Limpiamos los datos en caso de error
+      setGuideData(null);
       setError('Error al buscar la guía');
     } finally {
       setIsLoading(false);
@@ -51,7 +53,10 @@ const GuideTrackingPage: React.FC = () => {
       <PageTitle title="Seguimiento de guías" />
       <GuideFilter onSearch={handleSearch} />
       {isLoading && <ShippingInfoSkeleton />}
-      {!isLoading && !error && guideData && (
+      {!isLoading && !hasSearched && (
+        <NoData message="Empieza con la consulta de una guía" />
+      )}
+      {!isLoading && hasSearched && !error && guideData && (
         <ShippingInfo
           guide_state_description={guideData.guide_state_description}
           guide_histories={guideData.guide_histories}

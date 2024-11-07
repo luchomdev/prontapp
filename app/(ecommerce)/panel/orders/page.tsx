@@ -5,6 +5,7 @@ import OrderFilter from '@/components/panel/OrderFilter';
 import OrderCard from '@/components/panel/OrderCard';
 import OrderCardSkeleton from '@/components/panel/skeletons/SkeletonOrderCard';
 import LoadMoreButton from '@/components/panel/LoadMoreButton';
+import NoData from '@/components/NoData';
 import { fetchOrders } from '@/app/actions/orders';
 
 interface Order {
@@ -97,18 +98,22 @@ const OrdersPage: React.FC = () => {
                     Array.from({ length: limit }).map((_, index) => (
                         <OrderCardSkeleton key={index} />
                     ))
+                ) : orders.length === 0 ? (
+                    <NoData message="No se encontraron órdenes" />
                 ) : (
-                    orders.map((order) => (
-                        <OrderCard key={order.order_id} order={order} />
-                    ))
-                )}
-                {isLoadingMore && (
-                    Array.from({ length: limit }).map((_, index) => (
-                        <OrderCardSkeleton key={`loading-more-${index}`} />
-                    ))
+                    <>
+                        {orders.map((order) => (
+                            <OrderCard key={order.order_id} order={order} />
+                        ))}
+                        {isLoadingMore && (
+                            Array.from({ length: limit }).map((_, index) => (
+                                <OrderCardSkeleton key={`loading-more-${index}`} />
+                            ))
+                        )}
+                    </>
                 )}
             </div>
-            {!isLoading && orders.length < totalOrders && (
+            {!isLoading && orders.length < totalOrders && orders.length > 0 && (
                 <LoadMoreButton onLoadMore={handleLoadMore} isLoading={isLoadingMore} />
             )}
         </div>
