@@ -65,7 +65,8 @@ const Footer: React.FC = async () => {
             <ul className="space-y-2 text-sm">
               <li><Link prefetch href="/docs/politicas-devoluciones">Devoluciones y Cambios</Link></li>
               <li><Link prefetch href="/docs/politicas-uso">Políticas de uso del sitio</Link></li>
-              <li><Link prefetch href="/docs/faqs">FAQ&apos;s</Link></li>
+              <li><Link prefetch href="/docs/politicas-datos">Políticas de protección de datos</Link></li>
+              <li><Link prefetch href="/docs/faqs">Las preguntas más frecuentes</Link></li>
               <li><Link prefetch href="/docs/made-with-love">Hecho con 💛</Link></li>
             </ul>
           </div>
