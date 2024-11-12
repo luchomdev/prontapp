@@ -30,9 +30,9 @@ const OrderInfo: React.FC<OrderInfoProps> = ({ order_id, delivery_state_descript
         <p><strong>Método de Pago:</strong> {payment === 0 ? 'Contraentrega' : 'Pago Online'}</p>
       </div>
       <button 
-        disabled={guide_id !== null} 
+        disabled={guide_id !== null || delivery_state_description==="Cancelada"} 
         onClick={() => setShowCancelModal(true)} 
-        className={`mt-4 ${guide_id !== null ? 'bg-gray-100 text-gray-300' : 'bg-red-500 text-white hover:bg-red-600'} px-4 py-2 rounded-md transition-colors`}
+        className={`mt-4 ${(guide_id !== null || delivery_state_description==="Cancelada") ? 'bg-gray-100 text-gray-300' : 'bg-red-500 text-white hover:bg-red-600'} px-4 py-2 rounded-md transition-colors`}
       >
         Cancelar órden
       </button>
