@@ -9,13 +9,13 @@ import SkeletonProductsListWrapper from '@/components/skeletons/SkeletonProducts
 import { getProductsPublic } from '@/lib/dataLayer';
 
 interface CategoryPageProps {
-    params: {
-      categoryId: string;
-      slug?: string[];
-    };
-    searchParams: {
-      page?: string;
-    };
+  params: {
+    categoryId: string;
+    slug?: string[];
+  };
+  searchParams: {
+    page?: string;
+  };
 }
 
 interface Props {
@@ -30,14 +30,14 @@ export async function generateMetadata(
   const { categoryId, slug } = params;
   const page = searchParams.page ? parseInt(searchParams.page, 10) : 1;
 
-  const data = await getProductsPublic({category_id: categoryId, page: page});
+  const data = await getProductsPublic({ category_id: categoryId, page: page, limit: 12 });
   const categoryName = data.products[0]?.category_name || '';
   const productCount = data.total;
 
   return {
     title: `${categoryName} | Prontapp E-commerce (Página ${page})`,
     description: `Explora nuestra selección de ${productCount} productos en la categoría ${categoryName}. Encuentra las mejores ofertas y precios en Prontapp E-commerce.`,
-    keywords: [categoryName.toLowerCase(), 'productos', 'ofertas', 'productos en tendencias', 'comprar online',' compra y paga contra entrega'],
+    keywords: [categoryName.toLowerCase(), 'productos', 'ofertas', 'productos en tendencias', 'comprar online', ' compra y paga contra entrega'],
     openGraph: {
       title: `${categoryName} - Mi E-commerce`,
       description: `Descubre ${productCount} productos en ${categoryName}. Compra online con envío rápido ó pago contraentrega.`,
@@ -70,8 +70,8 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
   const { categoryId, slug } = params;
   const page = searchParams.page ? parseInt(searchParams.page, 10) : 1;
 
-  const data = await getProductsPublic({category_id: categoryId, page: page});
-  
+  const data = await getProductsPublic({ category_id: categoryId, page: page, limit: 12 });
+
   if (data.products.length === 0) {
     return <NoProductsMessage />;
   }
