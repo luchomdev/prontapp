@@ -83,7 +83,7 @@ const ModalCustomerZone: React.FC<ModalCustomerZoneProps> = ({ anchorEl, onClose
       // Si la respuesta es satisfactoria, procedemos con el logout en el cliente
       logout();
       onClose();
-      router.push('/');
+      router.replace('/');
     } catch (error) {
       console.error('Error during sign out:', error);
       // Aquí podrías mostrar un mensaje de error al usuario
