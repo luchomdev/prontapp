@@ -55,9 +55,9 @@ const HomeCardProduct: React.FC<HomeCardProductProps> = ({ product }) => {
   };
 
   return (
-    <div className="border border-gray-200 rounded-md p-2 flex flex-col max-w-[190px]">
+    <div className="border border-gray-200 rounded-md p-2 flex flex-col max-w-[200px] md:max-w-[250px]">
       <h3 className="text-xs md:text-sm font-semibold mb-1 truncate">{product.name}</h3>
-      <Link href={`/product/${product.id}/${product.seo_slug ? product.seo_slug : ''}`} className="relative w-full aspect-square mb-2 md:mb-3 max-w-[150px] md:max-w-full mx-auto">
+      <Link href={`/product/${product.id}/${product.seo_slug ? product.seo_slug : ''}`} className="relative w-full aspect-square mb-2 md:mb-3 max-w-[200px] md:max-w-full mx-auto">
         <Image
           src={mainImage}
           alt={product.name}

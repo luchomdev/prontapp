@@ -89,16 +89,16 @@ const CategorySidebar: React.FC<CategorySidebarProps> = ({ isOpen, onClose, cate
 
   return (
     <div className="fixed inset-y-0 left-0 w-64 md:w-80 lg:w-96 bg-white shadow-lg z-50 flex flex-col">
-      <div className="p-4 border-b">
+      <div className="p-4 border-b bg-slate-900">
         <div className="flex justify-between items-center mb-4">
           <Logo />
-          <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
+          <button onClick={onClose} className="text-gray-100 hover:text-white">
             <FaTimes size={24} />
           </button>
         </div>
         {isAuthenticated && user && (
           <div className="mt-2 flex flex-col items-center justify-center space-x-3">
-            <p className="text-sm font-medium text-gray-700">Hola, {user.name}</p>
+            <p className="text-sm font-medium text-white">Hola, {user.name}</p>
             <div className="mt-2">
               <LogoutButton onLogoutComplete={onClose} />
             </div>
