@@ -8,10 +8,10 @@ import ProductFilter from '@/app/(admin)/components/Products/ProductFilter';
 import LoadMoreData from '@/app/(admin)/components/LoadMoreData';
 import Toaster from '@/components/Toaster';
 import { useStore } from '@/stores/cartStore';
-import { 
-  Product, 
-  fetchProductsServer, 
-  mergeProductsServer 
+import {
+    Product,
+    fetchProductsServer,
+    mergeProductsServer
 } from '@/app/(admin)/actions/products';
 
 
@@ -121,7 +121,7 @@ const ProductsAdminPage = () => {
         setIsGrouping(true);
         try {
             const success = await mergeProductsServer(productsToGroup);
-            
+
             if (success) {
                 setToasterMessage('Productos agrupados exitosamente');
                 setToasterType('success');
@@ -150,7 +150,7 @@ const ProductsAdminPage = () => {
             fetchProducts(true);
         }
     }, [totalPages, fetchProducts]);
-    
+
     return (
         <div className="p-6">
 
@@ -164,6 +164,9 @@ const ProductsAdminPage = () => {
             <div className="flex justify-between items-center mb-6">
                 <h1 className="text-sm font-bold">Gestionar Productos</h1>
                 <div className="flex justify-normal items-center space-x-2">
+                    <Link href="/console/products/not-shared" title='Buscar en los productos propios de la tienda' className="bg-blue-500 hover:bg-blue-700 text-white text-sm font-bold py-1 px-2 rounded flex items-center mr-2">
+                        <FaWarehouse className="mr-2 text-sm" /> Stock de productos propios
+                    </Link>
                     <Link href="/console/products/megabodega" title='Buscar en la Megabodega' className="bg-blue-500 hover:bg-blue-700 text-white text-sm font-bold py-1 px-2 rounded flex items-center mr-2">
                         <FaWarehouse className="mr-2 text-sm" /> Bodega Productos
                     </Link>
