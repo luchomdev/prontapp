@@ -4,11 +4,11 @@ import Logo from '@/components/Logo';
 
 const BrandMessage: React.FC = () => {
   return (
-    <div className="bg-white border border-gray-200 rounded-lg p-6">
+    <div className="bg-slate-800 border border-slate-200 rounded-lg p-6">
       <div className="flex justify-center mb-6">
         <Logo />
       </div>
-      <p className="text-center mb-6">
+      <p className="text-center mb-6 text-white">
         Encuentra productos de tendencia al mejor precio y calidad, envíos a toda Colombia a bajo costo.
       </p>
       <div className="text-center">
