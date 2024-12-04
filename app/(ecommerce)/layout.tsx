@@ -113,7 +113,7 @@ export default async function RootLayout({
       </html>
     );
   } catch (error) {
-    console.error("Error fetching data for layout:", error);
+    console.error("Hubo un error obteniendo los datos en el layout principal:", error);
     return (
       <html lang="es">
         <body className={inter.className}>
