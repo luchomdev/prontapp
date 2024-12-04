@@ -62,6 +62,8 @@ jobs:
          echo "Backup and pull changes..."
          ssh ec2 "cd ${DEPLOY_PATH} && \
              cp package.json package.json.bak && \
+             git reset --hard HEAD && \
+             git clean -fd && \
              git pull origin prod && \
              cp package.json.bak package.json && \
              rm package.json.bak"
@@ -71,9 +73,9 @@ jobs:
          
          echo "Installing dependencies..."
          ssh ec2 "cd ${DEPLOY_PATH} && \
-             rm -rf node_modules && \
+             rm -rf node_modules .next && \
              npm cache clean --force && \
-             npm install --no-package-lock"
+             npm install --legacy-peer-deps --no-package-lock"
          
          echo "Building application..."
          ssh ec2 "cd ${DEPLOY_PATH} && npm run build"
