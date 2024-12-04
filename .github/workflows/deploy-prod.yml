@@ -59,23 +59,12 @@ jobs:
          echo "Testing SSH connection to EC2..."
          ssh -v ec2 "pwd && whoami"
          
-         echo "Backing up package files..."
+         echo "Backup and pull changes..."
          ssh ec2 "cd ${DEPLOY_PATH} && \
-             cp package.json package.json.backup && \
-             cp package-lock.json package-lock.json.backup"
-         
-         echo "Resetting and pulling latest changes..."
-         ssh ec2 "cd ${DEPLOY_PATH} && \
-             git config pull.rebase false && \
-             git reset --hard HEAD && \
-             git clean -fd && \
-             GIT_SSH_COMMAND=\"ssh -i /home/ubuntu/.ssh/deploy_key_frontend\" git pull origin prod"
-         
-         echo "Restoring package files from backup..."
-         ssh ec2 "cd ${DEPLOY_PATH} && \
-             cat package.json.backup > package.json && \
-             cat package-lock.json.backup > package-lock.json && \
-             rm package*.backup"
+             cp package.json package.json.bak && \
+             git pull origin prod && \
+             cp package.json.bak package.json && \
+             rm package.json.bak"
          
          echo "Copying environment file..."
          scp -v .env.production ec2:${DEPLOY_PATH}/.env.production
