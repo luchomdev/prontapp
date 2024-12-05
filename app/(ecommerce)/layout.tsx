@@ -9,6 +9,7 @@ import ScrollToTop from "@/components/ScrollToTop";
 import Hydration from "@/components/Hydration";
 import ModalSetAddress from "@/components/ModalSetAddress";
 import { AuthInitializer } from "@/components/auth/AuthInitializer";
+import Analytics from '@/components/Analytics'
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -80,7 +81,7 @@ export async function generateMetadata(): Promise<Metadata> {
       },
     };
   } catch (error) {
-    console.error("Error generating metadata:", error);
+    console.error("Error generando metadata:", error);
     return {
       title: "Prontapp E-commerce",
       description: "Tu tienda en línea favorita de artículos en tendencia",
@@ -109,6 +110,7 @@ export default async function RootLayout({
           <Footer />
           <ScrollToTop />
           <ModalSetAddress />
+          <Analytics />
         </body>
       </html>
     );
@@ -118,6 +120,7 @@ export default async function RootLayout({
       <html lang="es">
         <body className={inter.className}>
           <div>Error cargando la página. Por favor, intente más tarde.</div>
+          <Analytics />
         </body>
       </html>
     );
