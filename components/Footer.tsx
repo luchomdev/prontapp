@@ -1,5 +1,5 @@
 import React from 'react';
-import { FaPhoneAlt, FaFacebookF, FaTwitter } from 'react-icons/fa';
+import { FaPhoneAlt, FaFacebookF, FaInstagram, FaTiktok } from 'react-icons/fa';
 import HighlightCategoriesFooter from '@/components/HighlightCategoriesFooter';
 import DownloadAppCard from './DownloadAppCard';
 import PaySecureText from './SecurePaymentText';
@@ -39,8 +39,9 @@ const Footer: React.FC = async () => {
               <h3 className="font-bold mb-2">Información de Contacto</h3>
               <p className="text-sm">{direccion_bodega_bogota}</p>
               <div className="mt-4 flex space-x-4">
-                <FaFacebookF className="text-2xl" />
-                <FaTwitter className="text-2xl" />
+                <Link href="https://facebook.com/prontapp" target='_blank' rel='noopener noreferrer'><FaFacebookF className="text-2xl" /></Link>
+                <Link href="https://www.instagram.com/prontapp" target='_blank' rel='noopener noreferrer'><FaInstagram className="text-2xl" /></Link>
+                <Link href="https://www.tiktok.com/@prontapp" target='_blank' rel='noopener noreferrer'><FaTiktok className="text-2xl" /></Link>
               </div>
             </div>
           </div>
