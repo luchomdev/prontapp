@@ -57,11 +57,12 @@ jobs:
          DEPLOY_PATH="/var/www/frontend"
          
          echo "Creating deployment directory..."
-         ssh ec2 "sudo mkdir -p ${DEPLOY_PATH} && sudo chown -R \$USER:\$USER ${DEPLOY_PATH}"
+         ssh ec2 "sudo rm -rf ${DEPLOY_PATH} && \
+             sudo mkdir -p ${DEPLOY_PATH} && \
+             sudo chown -R ubuntu:ubuntu ${DEPLOY_PATH}"
          
          echo "Cloning repository..."
          ssh ec2 "cd /var/www && \
-             rm -rf frontend && \
              git clone https://github.com/prontappsas/prontappweb.git frontend && \
              cd frontend && \
              git checkout prod"
