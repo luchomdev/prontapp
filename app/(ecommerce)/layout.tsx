@@ -83,7 +83,7 @@ export async function generateMetadata(): Promise<Metadata> {
     console.error("Error generating metadata:", error);
     return {
       title: "Prontapp E-commerce",
-      description: "Tu tienda en línea favorita",
+      description: "Tu tienda en línea favorita de artículos en tendencia",
     };
   }
 }
