@@ -50,6 +50,7 @@ jobs:
 
           DOMAIN_URL=https://www.prontapp.co
           HTTP_S_DOMAIN_URL=https://www.prontapp.co
+          NEXT_PUBLIC_FBPIXEL=904859491774964
           EOF
 
       - name: Deploy to EC2
