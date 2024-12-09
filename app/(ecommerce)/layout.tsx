@@ -1,5 +1,6 @@
 import Script from "next/script"
 import type { Metadata } from "next";
+import Image from 'next/image'
 import { Inter } from "next/font/google";
 import "../globals.css";
 import Header from "@/components/Header";
@@ -130,11 +131,13 @@ export default async function RootLayout({
         `}
           </Script>
           <noscript>
-            <img
-              height="1"
-              width="1"
-              style={{ display: "none" }}
+            <Image
               src={`https://www.facebook.com/tr?id=${fbpixel}&ev=PageView&noscript=1`}
+              alt="Facebook Pixel"
+              width={1}
+              height={1}
+              style={{ display: "none" }}
+              unoptimized
             />
           </noscript>
         </body>
@@ -165,11 +168,13 @@ export default async function RootLayout({
         `}
           </Script>
           <noscript>
-            <img
-              height="1"
-              width="1"
-              style={{ display: "none" }}
+            <Image
               src={`https://www.facebook.com/tr?id=${fbpixel}&ev=PageView&noscript=1`}
+              alt="Facebook Pixel"
+              width={1}
+              height={1}
+              style={{ display: "none" }}
+              unoptimized
             />
           </noscript>
         </body>

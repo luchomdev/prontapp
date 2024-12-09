@@ -14,6 +14,14 @@ const nextConfig = {
             protocol: 'http',
             hostname: 'localhost'
           },
+          {
+            protocol: 'https',
+            hostname: 'www.facebook.com'
+          },
+          {
+            protocol: 'https',
+            hostname: 'facebook.com'
+          },
         ],
       },
 };
