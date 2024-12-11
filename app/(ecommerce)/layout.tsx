@@ -17,12 +17,7 @@ import Analytics from '@/components/Analytics'
 const inter = Inter({ subsets: ["latin"] });
 const fbpixel = process.env.NEXT_PUBLIC_FBPIXEL;
 
-export const metadata: Metadata = {
-  metadataBase: new URL('https://www.prontapp.co'),
-  other: {
-    'facebook-domain-verification': 'cyijuhhuin4rp3tdq6vj5hcle6mq35'
-  }
-}
+
 export async function generateMetadata(): Promise<Metadata> {
   try {
     const [categories, highlightCategories] = await Promise.all([
@@ -88,12 +83,18 @@ export async function generateMetadata(): Promise<Metadata> {
           'max-snippet': -1,
         },
       },
+      other: {
+        'facebook-domain-verification': 'cyijuhhuin4rp3tdq6vj5hcle6mq35'
+      }
     };
   } catch (error) {
     console.error("Error generando metadata:", error);
     return {
       title: "Prontapp E-commerce",
       description: "Tu tienda en línea favorita de artículos en tendencia",
+      other: {
+        'facebook-domain-verification': 'cyijuhhuin4rp3tdq6vj5hcle6mq35'
+      }
     };
   }
 }
