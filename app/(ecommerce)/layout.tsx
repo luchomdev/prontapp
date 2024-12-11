@@ -1,5 +1,6 @@
 import Script from "next/script"
 import type { Metadata } from "next";
+import Head from 'next/head'
 import Image from 'next/image'
 import { Inter } from "next/font/google";
 import "../globals.css";
@@ -16,6 +17,12 @@ import Analytics from '@/components/Analytics'
 const inter = Inter({ subsets: ["latin"] });
 const fbpixel = process.env.NEXT_PUBLIC_FBPIXEL;
 
+export const metadata: Metadata = {
+  metadataBase: new URL('https://www.prontapp.co'),
+  other: {
+    'facebook-domain-verification': 'cyijuhhuin4rp3tdq6vj5hcle6mq35'
+  }
+}
 export async function generateMetadata(): Promise<Metadata> {
   try {
     const [categories, highlightCategories] = await Promise.all([
