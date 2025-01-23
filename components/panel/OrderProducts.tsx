@@ -1,7 +1,8 @@
 "use client"
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import ModalSetStar from '@/components/panel/ModalSetStar';
+import { checkProductRating } from '@/app/actions/orders';
 
 interface ProductItemProps {
   name: string;
@@ -14,19 +15,27 @@ interface ProductItemProps {
   last_state: number | null
 }
 
-const ProductItem: React.FC<ProductItemProps> = ({ 
-  name, 
-  amount, 
-  price, 
-  imageUrl, 
-  productId, 
-  orderId, 
-  delivery_state, 
-  last_state 
+const ProductItem: React.FC<ProductItemProps> = ({
+  name,
+  amount,
+  price,
+  imageUrl,
+  productId,
+  orderId,
+  delivery_state,
+  last_state
 }) => {
   const [showRatingModal, setShowRatingModal] = useState(false);
+  const [hasRated, setHasRated] = useState(false);
+  useEffect(() => {
+    const checkRating = async () => {
+      const rated = await checkProductRating(orderId, productId);
+      setHasRated(rated);
+    };
+    checkRating();
+  }, [orderId, productId]);
 
-  const canRate = delivery_state === 4 && last_state === 17;
+  const canRate = delivery_state === 4 && last_state === 17 && !hasRated;
 
   return (
     <div className="flex items-center justify-between border-b py-4">
@@ -48,14 +57,24 @@ const ProductItem: React.FC<ProductItemProps> = ({
           <p className="text-gray-600">Subtotal: ${(price * amount).toLocaleString()}</p>
         </div>
       </div>
-      {canRate && (
+      {/* {canRate && (
         <button 
           onClick={() => setShowRatingModal(true)}
           className="bg-orange-500 text-white px-4 py-2 rounded-md hover:bg-orange-600 transition-colors"
         >
           Calificar Producto
         </button>
-      )}
+      )} */}
+      <button
+        onClick={() => setShowRatingModal(true)}
+        disabled={!canRate}
+        className={`px-4 py-2 rounded-md transition-colors ${canRate
+            ? 'bg-orange-500 hover:bg-orange-600 text-white'
+            : 'bg-gray-300 text-gray-600 cursor-not-allowed'
+          }`}
+      >
+        Calificar Producto
+      </button>
       {showRatingModal && (
         <ModalSetStar
           productId={productId}

@@ -239,3 +239,31 @@ export async function submitRating(
         return false;
     }
 }
+
+export async function checkProductRating(orderId: string, productId: string): Promise<boolean> {
+    try {
+        const response = await fetch(
+            `${process.env.API_BASE_URL}/rating/check`,
+            {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Cookie': cookies().toString() || ''
+                },
+                credentials: 'include',
+                body: JSON.stringify({
+                    order_id: orderId,
+                    product_id: productId
+                })
+            }
+        );
+
+        if (!response.ok) throw new Error('Failed to check rating status');
+
+        const data = await response.json();
+        return data.hasRated;
+    } catch (error) {
+        console.error('Error in checkProductRating server action:', error);
+        return false;
+    }
+}
