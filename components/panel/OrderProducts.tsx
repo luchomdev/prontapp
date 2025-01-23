@@ -26,7 +26,7 @@ const ProductItem: React.FC<ProductItemProps> = ({
 }) => {
   const [showRatingModal, setShowRatingModal] = useState(false);
 
-  const canRate = delivery_state === 4 && last_state === 3;
+  const canRate = delivery_state === 4 && last_state === 17;
 
   return (
     <div className="flex items-center justify-between border-b py-4">
