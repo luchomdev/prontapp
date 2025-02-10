@@ -6,6 +6,7 @@ import ProductCategorySection from '@/components/ProductCategorySection';
 import RecentlyViewed from "@/components/RecentlyViewed";
 import { getProductsByCategoriesHome, getSliderImages, getProductsPublic, getTrendyProducts, getDiscountProducts, getBestSellerProducts, getPublicConfig } from "@/lib/dataLayer";
 import ProductSectionContainer from '@/components/home/ProductSectionContainer';
+import ProntappAdvantages from '@/components/ProntappAdvantages';
 
 type Props = {
   params: { id: string }
@@ -144,6 +145,7 @@ export default async function Home() {
         <HomeSectionContainer>
           <RecentlyViewed />
         </HomeSectionContainer>
+        <ProntappAdvantages />
         <NewsletterSubscription />
       </div>
     );
