@@ -2,12 +2,31 @@
 import { type NextRequest } from 'next/server'
 import { getProductsPublic, parseProductImages } from '@/lib/dataLayer'
 
+function generateSlug(text: string): string {
+  return text
+    // Convertir a minúsculas
+    .toLowerCase()
+    // Reemplazar caracteres especiales/diacríticos por sus equivalentes
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    // Reemplazar ñ por n
+    .replace(/ñ/g, 'n')
+    // Reemplazar espacios y caracteres especiales por guiones
+    .replace(/[^a-z0-9\s-]/g, '')
+    // Reemplazar espacios por guiones
+    .replace(/\s+/g, '-')
+    // Reemplazar múltiples guiones por uno solo
+    .replace(/-+/g, '-')
+    // Remover guiones del inicio y final
+    .trim()
+    .replace(/^-+|-+$/g, '');
+}
 
 export async function GET(request: NextRequest) {
   try {
     const { products } = await getProductsPublic({
-        limit:1000,
-        page:1
+        limit: 1000,
+        page: 1
     });
 
     const xml = `<?xml version="1.0" encoding="UTF-8"?>
@@ -20,13 +39,16 @@ export async function GET(request: NextRequest) {
           // Parseamos las imágenes del string JSON a array de objetos
           const productImages = parseProductImages(product.images);
           const firstImageUrl = productImages[0]?.url || '';
+          
+          // Generamos el slug si no existe
+          const productSlug = product.seo_slug || generateSlug(product.name);
 
           return `
           <item>
             <g:id>${product.stock_id}</g:id>
             <g:title>${escapeXml(product.name)}</g:title>
             <g:description>${escapeXml(product.description)}</g:description>
-            <g:link>${process.env.DOMAIN_URL}/product/${product.id}/${product.seo_slug}</g:link>
+            <g:link>${process.env.DOMAIN_URL}/product/${product.id}/${productSlug}</g:link>
             <g:image_link>${escapeXml(firstImageUrl)}</g:image_link>
             <g:availability>${Number(product.amount) > 0 ? 'in stock' : 'out of stock'}</g:availability>
             <g:price>${product.precio_final} COP</g:price>
