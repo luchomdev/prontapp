@@ -1,6 +1,6 @@
 "use client"
 import React from 'react';
-import { FaTimes, FaTrash } from 'react-icons/fa';
+import { FaTimes } from 'react-icons/fa';
 import { useStore } from '@/stores/cartStore';
 import MiniCartProduct from '@/components/MiniCartProduct';
 import { useRouter } from 'next/navigation';
@@ -8,31 +8,30 @@ import { formatCurrency } from '@/lib/Helpers';
 
 const CartSidebar: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen, onClose }) => {
   const router = useRouter();
-  const { cart, removeFromCart, subtotalsValue, isAuthenticated, shippingAddress, totalItems } = useStore(state => ({
+  const { 
+    cart, 
+    removeFromCart, 
+    subtotalsValue, 
+    totalItems,
+    closeCartSidebar 
+  } = useStore(state => ({
     cart: state.cart,
     removeFromCart: state.removeFromCart,
     subtotalsValue: state.subtotalsValue,
-    isAuthenticated: state.isAuthenticated,
-    shippingAddress: state.shippingAddress,
-    totalItems: state.totalItems
+    totalItems: state.totalItems,
+    closeCartSidebar: state.closeCartSidebar
   }));
-
-  const isActionEnabled = isAuthenticated && !!shippingAddress && totalItems > 0;
 
   if (!isOpen) return null;
 
   const handleViewCart = () => {
-    if (isActionEnabled) {
-      router.push('/cart');
-      onClose();
-    }
+    router.push('/cart');
+    onClose();
   };
 
   const handleCheckout = () => {
-    if (isActionEnabled) {
-      router.push('/checkout');
-      onClose();
-    }
+    router.push('/checkout');
+    onClose();
   };
 
   return (
@@ -59,30 +58,19 @@ const CartSidebar: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpe
       <div className="p-4 border-t">
         <p className="text-right mb-2">Total: {formatCurrency(subtotalsValue)}</p>
         <button 
-          className="w-full mb-2 bg-orange-500 text-white py-2 rounded hover:bg-orange-600 disabled:bg-gray-300 disabled:cursor-not-allowed"
+          className="w-full mb-2 bg-orange-500 text-white py-2 font-bold rounded hover:bg-orange-600 disabled:bg-gray-300 disabled:cursor-not-allowed"
           onClick={handleViewCart}
-          disabled={!isActionEnabled}
+          disabled={totalItems === 0}
         >
-          Ver Carrito
+          Continuar compra
         </button>
-        <button 
+        {/* <button 
           className="w-full bg-black text-white py-2 rounded hover:bg-gray-800 disabled:bg-gray-300 disabled:cursor-not-allowed"
           onClick={handleCheckout}
-          disabled={!isActionEnabled}
+          disabled={totalItems === 0}
         >
-          Finalizar Compra
-        </button>
-        {!isActionEnabled && (
-          <p className="mt-2 text-sm text-red-500 text-center">
-            {!isAuthenticated 
-              ? 'Inicia sesión para continuar' 
-              : !shippingAddress 
-                ? 'Establece una dirección de envío'
-                : totalItems === 0
-                  ? 'Agrega productos al carrito'
-                  : ''}
-          </p>
-        )}
+          Continuar Compra
+        </button> */}
       </div>
     </div>
   );

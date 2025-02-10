@@ -10,7 +10,7 @@ interface HighlightCategoriesFooterProps {
 const HighlightCategoriesFooter: React.FC<HighlightCategoriesFooterProps> = ({ categories }) => {
   return (
     <div>
-      <h3 className="font-bold mb-4">Categorías Destacadas</h3>
+      <h3 className="font-bold mb-4">Mejores Categorías</h3>
       <ul className="space-y-2 text-sm">
         {categories.map((category) => (
           <li key={category.id}>

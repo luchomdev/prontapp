@@ -12,7 +12,7 @@ export interface Address {
   default_address?: string;
 }
 
-interface AuthUser {
+export interface AuthUser {
   id: string;
   email: string;
   name: string;
@@ -23,7 +23,7 @@ interface AuthUser {
 }
 
 // Tipos
-interface CartItem {
+export interface CartItem {
   name: string;
   cantidad: number;
   precio: number;
@@ -35,14 +35,14 @@ interface CartItem {
   };
 }
 
-interface ShippingAddress {
+export interface ShippingAddress {
   city_id: number;
   cityName: string;
   address: string;
   addressComplement: string;
 }
 
-interface CustomerInfo {
+export interface CustomerInfo {
   name: string;
   email: string;
   identification: string;
@@ -51,7 +51,7 @@ interface CustomerInfo {
   city_id: string;
 }
 
-interface ShippingQuoteItem {
+export interface ShippingQuoteItem {
   stock_ids: number[];
   shipping_value: number;
   courier_id: number;
@@ -83,6 +83,8 @@ interface StoreState {
   addresses: Address[];
   isSidebarCollapsed: boolean;
   productsToGroup: string[];
+  isCartSidebarOpen: boolean;
+  isLoginModalOpen: boolean;
 }
 
 interface RecentlyViewedProduct {
@@ -129,6 +131,10 @@ interface StoreActions {
   addProductsToGroups: (productId: string) => void;
   clearProductsToGroup: () => void;
   resetAllState: () => void;
+  openCartSidebar: () => void;
+  closeCartSidebar: () => void;
+  openLoginModal: () => void;
+  closeLoginModal: () => void;
 }
 
 const initialState: StoreState = {
@@ -152,6 +158,8 @@ const initialState: StoreState = {
   addresses: [],
   isSidebarCollapsed: false,
   productsToGroup: [],
+  isCartSidebarOpen: false,
+  isLoginModalOpen: false,
 };
 
 // Función auxiliar para calcular los totales del carrito
@@ -357,6 +365,10 @@ export const useStore = create<StoreState & StoreActions>()(
         tmp_order_id: null,
         productsToGroup: [],
       })),
+      openCartSidebar: () => set({ isCartSidebarOpen: true }),
+      closeCartSidebar: () => set({ isCartSidebarOpen: false }),
+      openLoginModal: () => set({ isLoginModalOpen: true }),
+      closeLoginModal: () => set({ isLoginModalOpen: false }),
     }),
     {
       name: 'prontapp-store',

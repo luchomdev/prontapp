@@ -3,7 +3,7 @@ import type { NextRequest } from 'next/server'
 import { verifyToken } from '@/lib/auth'
 
 // Rutas protegidas para usuarios normales
-const NORMAL_USER_PROTECTED_ROUTES = ['/panel', '/cart', '/checkout', '/payment', '/confirmation', '/cash-confirmation']
+const NORMAL_USER_PROTECTED_ROUTES = ['/panel', '/checkout', '/payment', '/confirmation', '/cash-confirmation']
 
 // Rutas protegidas para administradores (todas las que empiezan con /console)
 const ADMIN_PROTECTED_ROUTES = '/console'

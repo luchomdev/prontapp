@@ -29,7 +29,7 @@ const SearchBox: React.FC = () => {
   };
 
   return (
-    <div className="hidden lg:flex flex-grow mx-4">
+    <div className="hidden md:block lg:flex flex-grow mx-4">
       <form onSubmit={handleSearch} className="relative w-full max-w-[85%] mx-auto">
         <input
           type="text"

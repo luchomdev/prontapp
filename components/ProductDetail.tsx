@@ -27,6 +27,7 @@ const ProductDetailComp: React.FC<ProductDetailProps> = ({ product, relatedProdu
     const [quantity, setQuantity] = useState(product.min_qty);
     const addToCart = useStore((state) => state.addToCart);
     const addToRecentlyViewed = useStore((state) => state.addToRecentlyViewed);
+    const openCartSidebar = useStore((state) => state.openCartSidebar);
     const shippingAddress = useStore((state) => state.shippingAddress);
     const [shippingEstimate, setShippingEstimate] = useState<number | null>(null);
     const [isLoadingShippingEstimate, setIsLoadingShippingEstimate] = useState(false);
@@ -50,6 +51,7 @@ const ProductDetailComp: React.FC<ProductDetailProps> = ({ product, relatedProdu
 
         setIsAddingToCart(true);
         setShowToast(true);
+        openCartSidebar();
 
         setTimeout(() => {
             setIsAddingToCart(false);

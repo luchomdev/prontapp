@@ -10,7 +10,7 @@ import CartSidebar from '@/components/CartSidebar';
 import LocationPopover from '@/components/LocationPopover';
 import ModalSearchMini from '@/components/ModalSearchMini';
 import SearchBox from '@/components/SearchBox';
-import HighlightCategoriesHeader from '@/components/HightlightCategoriesHeader';
+//import HighlightCategoriesHeader from '@/components/HightlightCategoriesHeader';
 import { Category, HighlightCategory } from '@/lib/dataLayer';
 import ModalSignIn from '@/components/ModalSignin';
 import ModalCustomerZone from '@/components/auth/ModalCustomerZone';
@@ -37,19 +37,30 @@ const Header: React.FC<HeaderProps> = ({ categories, highlightCategories }) => {
         shippingAddress,
         totalItems,
         subtotalsValue,
+        isCartSidebarOpen,
+        openCartSidebar,
+        closeCartSidebar,
+        isLoginModalOpen,
+        openLoginModal,    // Agregamos esta línea
+        closeLoginModal,
     } = useStore((state) => ({
         isLoading: state.isLoading,
         openLocationModal: state.openLocationModal,
         checkAndShowLocationModal: state.checkAndShowLocationModal,
         shippingAddress: state.shippingAddress,
         totalItems: state.totalItems,
-        subtotalsValue: state.subtotalsValue
+        subtotalsValue: state.subtotalsValue,
+        isCartSidebarOpen: state.isCartSidebarOpen,
+        openCartSidebar: state.openCartSidebar,
+        closeCartSidebar: state.closeCartSidebar,
+        isLoginModalOpen: state.isLoginModalOpen,
+        openLoginModal: state.openLoginModal,    // Agregamos esta línea
+        closeLoginModal: state.closeLoginModal,
     }));
     const [isCategorySidebarOpen, setIsCategorySidebarOpen] = useState(false);
-    const [isCartSidebarOpen, setIsCartSidebarOpen] = useState(false);
     const locationButtonRef = useRef<HTMLButtonElement>(null);
     const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
-    const [isSignInModalOpen, setIsSignInModalOpen] = useState(false);
+    // const [isSignInModalOpen, setIsSignInModalOpen] = useState(false);
 
     const [isCustomerZoneOpen, setIsCustomerZoneOpen] = useState(false);
     const customerZoneButtonRef = useRef<HTMLButtonElement>(null);
@@ -64,17 +75,17 @@ const Header: React.FC<HeaderProps> = ({ categories, highlightCategories }) => {
         router.push(`/products/${category.id}/${category.slug}`);
         setIsCategorySidebarOpen(false);
     };
-    useEffect(() => {
+    /* useEffect(() => {
         checkAndShowLocationModal();
     }, [checkAndShowLocationModal]);
-
+ */
     const handleCustomerZoneClick = () => {
         setIsCustomerZoneOpen(!isCustomerZoneOpen);
     };
 
     const handleCartClick = () => {
         if (totalItems > 0) {
-            setIsCartSidebarOpen(true);
+            openCartSidebar();
         }
     };
 
@@ -83,6 +94,7 @@ const Header: React.FC<HeaderProps> = ({ categories, highlightCategories }) => {
     }
     return (
         <header className="w-full">
+            {/* primera fila donde esta la bandera, ubicacion e inicio de sesion */}
             <div className="bg-[#FF8B39] h-10 flex items-center justify-between px-4 text-white">
                 <div className="flex items-center">
                     {/* <ColFlag /> */}
@@ -111,7 +123,8 @@ const Header: React.FC<HeaderProps> = ({ categories, highlightCategories }) => {
                         </button>
                     ) : (
 
-                        <button className="flex items-center" onClick={() => setIsSignInModalOpen(true)}>
+
+                        <button className="flex items-center" onClick={openLoginModal}>
                             <FaUser className="mr-1" />
                             Regístrate o Inicia sesión
                         </button>
@@ -120,11 +133,14 @@ const Header: React.FC<HeaderProps> = ({ categories, highlightCategories }) => {
 
                 </div>
             </div>
-
+            {/* logo, buscador, cart y articulos recientes desktop size */}
             <div className="bg-black h-[80px] sm:h-[90px] md:h-[100px] flex items-center justify-between px-4 transition-all duration-300">
-                <div className="flex items-center">
-                    <FaBars className="text-white mr-4 text-xl sm:text-2xl lg:hidden cursor-pointer" onClick={() => setIsCategorySidebarOpen(true)} />
+                <div className="flex items-center space-x-4">
                     <Logo />
+                    <div className=' flex px-4 items-center justify-between space-x-4' onClick={() => setIsCategorySidebarOpen(true)}>
+                        <h1 className=' text-xl md:text-2xl font-bold text-white cursor-pointer'>Menú</h1>
+                        <FaBars className="text-white mr-4 text-xl sm:text-2xl  cursor-pointer" />
+                    </div>
                 </div>
 
                 <SearchBox />
@@ -133,8 +149,8 @@ const Header: React.FC<HeaderProps> = ({ categories, highlightCategories }) => {
                     <FaSearch onClick={() => setIsSearchModalOpen(true)} className="mr-4 text-xl sm:text-2xl md:hidden lg:hidden cursor-pointer" />
                     <Link href={`/recently-viewed-products`}><FaHistory className="mr-4 text-xl sm:text-2xl hidden lg:block" /></Link>
                     <div className="flex flex-col sm:flex-row items-end sm:items-center">
-                        <div 
-                            className={`relative mb-1 sm:mb-0 mr-2 sm:mr-4 ${totalItems > 0 ? 'cursor-pointer' : 'cursor-not-allowed opacity-50'}`} 
+                        <div
+                            className={`relative mb-1 sm:mb-0 mr-2 sm:mr-4 ${totalItems > 0 ? 'cursor-pointer' : 'cursor-not-allowed opacity-50'}`}
                             onClick={handleCartClick}
                         >
                             <FaShoppingCart className="text-xl sm:text-2xl" />
@@ -147,17 +163,6 @@ const Header: React.FC<HeaderProps> = ({ categories, highlightCategories }) => {
                 </div>
             </div>
 
-            <div className="bg-gray-100 h-12 items-center px-4 hidden lg:flex">
-                <button
-                    className="flex items-center mr-4 cursor-pointer"
-                    onClick={() => setIsCategorySidebarOpen(true)}
-                >
-                    <FaBars className="text-[#FF8B39] border border-[#FF8B39] p-1 mr-2" />
-                    <span className="text-[#FF8B39]">Categorías</span>
-                </button>
-                <HighlightCategoriesHeader categories={highlightCategories} />
-            </div>
-
             <CategorySidebar
                 isOpen={isCategorySidebarOpen}
                 onClose={() => setIsCategorySidebarOpen(false)}
@@ -166,7 +171,7 @@ const Header: React.FC<HeaderProps> = ({ categories, highlightCategories }) => {
             />
             <CartSidebar
                 isOpen={isCartSidebarOpen}
-                onClose={() => setIsCartSidebarOpen(false)}
+                onClose={closeCartSidebar}
             />
             <LocationPopover anchorEl={locationButtonRef.current} />
 
@@ -175,7 +180,7 @@ const Header: React.FC<HeaderProps> = ({ categories, highlightCategories }) => {
                 onClose={() => setIsSearchModalOpen(false)}
                 onProductClick={handleProductClick}
             />
-            <ModalSignIn isOpen={isSignInModalOpen} onClose={() => setIsSignInModalOpen(false)} />
+            <ModalSignIn isOpen={isLoginModalOpen} onClose={closeLoginModal} />
             {isCustomerZoneOpen && (
                 <ModalCustomerZone
                     anchorEl={customerZoneButtonRef.current}

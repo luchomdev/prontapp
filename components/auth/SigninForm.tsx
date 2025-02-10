@@ -1,5 +1,5 @@
 "use client"
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useStore } from '@/stores/cartStore';
 import { validateEmail } from '@/lib/validator'
@@ -9,11 +9,12 @@ import { signIn } from '@/app/actions/signin';
 
 interface SigninFormProps {
   onSuccess?: () => void;
+  initialEmail?: string;
 }
 
-const SigninForm: React.FC<SigninFormProps> = ({ onSuccess }) => {
+const SigninForm: React.FC<SigninFormProps> = ({ onSuccess, initialEmail = '' }) => {
   const router = useRouter()
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState(initialEmail);
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -24,6 +25,13 @@ const SigninForm: React.FC<SigninFormProps> = ({ onSuccess }) => {
     setAuthenticated: state.setAuthenticated,
     setShippingAddress: state.setShippingAddress
   }));
+
+  // Actualizar email cuando cambia initialEmail
+  useEffect(() => {
+    if (initialEmail) {
+      setEmail(initialEmail);
+    }
+  }, [initialEmail]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -64,14 +72,13 @@ const SigninForm: React.FC<SigninFormProps> = ({ onSuccess }) => {
         });
       }
 
-      // Redirección basada en el rol del usuario
-      if (result.user.role === 'admin') {
+      if (onSuccess) {
+        onSuccess();
+      } else if (result.user.role === 'admin') {
         router.replace("/console/dashboard");
       } else {
         router.replace("/");
       }
-
-      if (onSuccess) onSuccess();
     } catch (error) {
       setError('Error al intentar iniciar sesión. Por favor, intente de nuevo.');
     } finally {
@@ -93,6 +100,7 @@ const SigninForm: React.FC<SigninFormProps> = ({ onSuccess }) => {
         placeholder="Correo electrónico"
         className="w-full p-2 mb-4 border rounded"
         required
+        readOnly={!!initialEmail}
       />
       <div className="relative">
         <input

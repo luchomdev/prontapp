@@ -16,8 +16,10 @@ const HomeCardProduct: React.FC<HomeCardProductProps> = ({ product }) => {
   const images = parseProductImages(product.images);
   const mainImage = images.length > 0 ? images[0].url : '/placeholder.jpg';
   const addToCart = useStore((state) => state.addToCart);
+  const openCartSidebar = useStore((state) => state.openCartSidebar);
   const [isAddingToCart, setIsAddingToCart] = useState(false);
   const [showToast, setShowToast] = useState(false);
+  
 
   const handleAddToCart = () => {
     let parsedMeasures: { [key: string]: string };
@@ -44,6 +46,7 @@ const HomeCardProduct: React.FC<HomeCardProductProps> = ({ product }) => {
 
     setIsAddingToCart(true);
     setShowToast(true);
+    openCartSidebar();
 
     setTimeout(() => {
       setIsAddingToCart(false);

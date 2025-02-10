@@ -1,28 +1,46 @@
 "use client"
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from "next/navigation";
 import { FaInfoCircle } from 'react-icons/fa';
 import { validateEmail } from '@/lib/validator';
 import Toaster from '@/components/Toaster';
 import ColFlag from '@/components/ColFlag';
 import { signUpServer } from '@/app/actions/auth';
+import { useStore } from '@/stores/cartStore';
 
-const RegisterForm: React.FC = () => {
+interface RegisterFormProps {
+  initialEmail?: string;
+  onSuccess?: () => void;
+}
+
+const RegisterForm: React.FC<RegisterFormProps> = ({ initialEmail = '', onSuccess }) => {
   const router = useRouter();
+  const { setUser, setAuthenticated } = useStore((state) => ({
+    setUser: state.setUser,
+    setAuthenticated: state.setAuthenticated,
+  }));
+
   const [formData, setFormData] = useState({
     identification: '',
     name: '',
     lastName: '',
-    email: '',
+    email: initialEmail,
     phone: '',
     password: '',
   });
+  
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const [toastType, setToastType] = useState<'success' | 'error'>('success');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [acceptTerms, setAcceptTerms] = useState(false);
+
+  useEffect(() => {
+    if (initialEmail) {
+      setFormData(prev => ({ ...prev, email: initialEmail }));
+    }
+  }, [initialEmail]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -61,8 +79,17 @@ const RegisterForm: React.FC = () => {
       setToastType(result.success ? 'success' : 'error');
       setShowToast(true);
 
-      if (result.success) {
-        setTimeout(() => router.push('/signin'), 3000);
+      if (result.success && result.user) {
+        // Establecer el usuario en el estado global
+        setUser(result.user);
+        setAuthenticated(true);
+
+        // Manejar la redirección
+        if (onSuccess) {
+          setTimeout(onSuccess, 2000);
+        } else {
+          setTimeout(() => router.push('/'), 3000);
+        }
       }
     } catch (error) {
       setToastMessage('Error al conectar con el servidor');
@@ -119,6 +146,7 @@ const RegisterForm: React.FC = () => {
         placeholder="Email"
         className="w-full p-2 border rounded"
         required
+        readOnly={!!initialEmail}
       />
       {errors.email && <p className="text-red-500 text-sm">{errors.email}</p>}
 

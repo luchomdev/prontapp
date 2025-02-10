@@ -91,7 +91,7 @@ const LocationPopover: React.FC<PopoverProps> = ({ anchorEl }) => {
           className="absolute w-2 h-2 bg-white rotate-45 transform"
           style={{
             ...arrowStyle,
-            [staticSide === 'top' ? 'bottom' : 'top']: '-4px', // Ajustado para que la flecha apunte hacia arriba
+            [staticSide === 'top' ? 'bottom' : 'top']: '-4px',
           }}
         />
         <div className="relative">
@@ -105,7 +105,7 @@ const LocationPopover: React.FC<PopoverProps> = ({ anchorEl }) => {
           </div>
           {shippingAddress ? (
             <p className="text-sm mb-4">
-              {`${shippingAddress.cityName}, ${shippingAddress.address}`}
+              {`${shippingAddress.cityName}${shippingAddress.address ? `, ${shippingAddress.address}` : ''}`}
             </p>
           ) : (
             <p className="text-sm mb-4">
