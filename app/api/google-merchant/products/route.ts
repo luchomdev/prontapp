@@ -45,11 +45,6 @@ export async function GET(request: NextRequest) {
             <g:brand>Prontapp</g:brand>
             <g:condition>new</g:condition>
             <g:identifier_exists>no</g:identifier_exists>
-            <g:shipping>
-              <g:country>CO</g:country>
-              <g:service>Standard</g:service>
-              <g:price>0 COP</g:price>
-            </g:shipping>
           </item>
         `}).join('')}
       </channel>
