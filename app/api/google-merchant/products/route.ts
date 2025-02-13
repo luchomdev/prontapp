@@ -32,7 +32,6 @@ export async function GET(request: NextRequest) {
           const productImages = parseProductImages(product.images);
           const firstImageUrl = productImages[0]?.url || '';
           const productSlug = product.seo_slug || generateSlug(product.name);
-          const categoryName = product.category_name || 'Sin categoría';
 
           return `
           <item>
@@ -45,19 +44,12 @@ export async function GET(request: NextRequest) {
             <g:price>${product.precio_final} COP</g:price>
             <g:brand>Prontapp</g:brand>
             <g:condition>new</g:condition>
-            <g:identifier_exists>false</g:identifier_exists>
-            <g:google_product_category>${escapeXml(categoryName)}</g:google_product_category>
-            <g:mpn>${product.id}</g:mpn>
+            <g:identifier_exists>no</g:identifier_exists>
             <g:shipping>
               <g:country>CO</g:country>
               <g:service>Standard</g:service>
               <g:price>0 COP</g:price>
             </g:shipping>
-            <g:tax>
-              <g:country>CO</g:country>
-              <g:rate>19</g:rate>
-              <g:tax_ship>true</g:tax_ship>
-            </g:tax>
           </item>
         `}).join('')}
       </channel>
