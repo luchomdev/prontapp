@@ -1,5 +1,5 @@
 import React from 'react';
-import { FaPhoneAlt, FaFacebookF, FaInstagram, FaTiktok } from 'react-icons/fa';
+import { FaPhoneAlt, FaFacebookF, FaInstagram, FaTiktok, FaWhatsapp, FaInfoCircle } from 'react-icons/fa';
 import HighlightCategoriesFooter from '@/components/HighlightCategoriesFooter';
 import DownloadAppCard from './DownloadAppCard';
 import PaySecureText from './SecurePaymentText';
@@ -40,6 +40,31 @@ const Footer: React.FC = async () => {
               <div className="mt-6 pt-6 border-t border-gray-700">
                 <h3 className="font-bold mb-2">Información de Contacto</h3>
                 <p className="text-sm">{direccion_bodega_bogota}</p>
+                <div className="mt-2">
+                  <Link 
+                    href="/docs/acerca-de-prontapp"
+                    className="text-sm flex items-center space-x-2 hover:text-orange-500 transition-colors"
+                  >
+                    <FaInfoCircle className="text-orange-500" />
+                    <span>Acerca de PRONTAPP</span>
+                  </Link>
+                </div>
+                <div className="mt-2">
+                  <Link 
+                    href="https://wa.me/573002541308"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-sm flex items-center space-x-2 hover:text-orange-500 transition-colors"
+                  >
+                    <FaWhatsapp className="text-orange-500" />
+                    <span>(+57) 300 254 1308</span>
+                  </Link>
+                </div>
+                <div className="mt-2">
+                  <p className="text-sm flex items-center space-x-2">
+                    <span>info [at] prontapp [dot] co</span>
+                  </p>
+                </div>
                 <div className="mt-4 flex space-x-4">
                   <Link href="https://facebook.com/prontapp" target='_blank' rel='noopener noreferrer'><FaFacebookF className="text-2xl" /></Link>
                   <Link href="https://www.instagram.com/prontapp" target='_blank' rel='noopener noreferrer'><FaInstagram className="text-2xl" /></Link>

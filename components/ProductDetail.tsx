@@ -144,10 +144,10 @@ const ProductDetailComp: React.FC<ProductDetailProps> = ({ product, relatedProdu
                     </button>
                 </div>
             </div>
-            <ReviewList reviews={product.ratings} />
-            <RelatedProducts products={relatedProducts} />
             <ProductDescription description={product.description} />
             <ProductWarranty warranty={product.warranty} />
+            <ReviewList reviews={product.ratings} />
+            <RelatedProducts products={relatedProducts} />
             <RecentlyViewed />
             {showToast && (
                 <Toaster

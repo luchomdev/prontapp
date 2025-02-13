@@ -4,20 +4,13 @@ import { getProductsPublic, parseProductImages } from '@/lib/dataLayer'
 
 function generateSlug(text: string): string {
   return text
-    // Convertir a minúsculas
     .toLowerCase()
-    // Reemplazar caracteres especiales/diacríticos por sus equivalentes
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
-    // Reemplazar ñ por n
     .replace(/ñ/g, 'n')
-    // Reemplazar espacios y caracteres especiales por guiones
     .replace(/[^a-z0-9\s-]/g, '')
-    // Reemplazar espacios por guiones
     .replace(/\s+/g, '-')
-    // Reemplazar múltiples guiones por uno solo
     .replace(/-+/g, '-')
-    // Remover guiones del inicio y final
     .trim()
     .replace(/^-+|-+$/g, '');
 }
@@ -36,12 +29,10 @@ export async function GET(request: NextRequest) {
         <link>${process.env.DOMAIN_URL}</link>
         <description>Productos de Prontapp</description>
         ${products.map(product => {
-          // Parseamos las imágenes del string JSON a array de objetos
           const productImages = parseProductImages(product.images);
           const firstImageUrl = productImages[0]?.url || '';
-          
-          // Generamos el slug si no existe
           const productSlug = product.seo_slug || generateSlug(product.name);
+          const categoryName = product.category_name || 'Sin categoría';
 
           return `
           <item>
@@ -55,6 +46,18 @@ export async function GET(request: NextRequest) {
             <g:brand>Prontapp</g:brand>
             <g:condition>new</g:condition>
             <g:identifier_exists>false</g:identifier_exists>
+            <g:google_product_category>${escapeXml(categoryName)}</g:google_product_category>
+            <g:mpn>${product.id}</g:mpn>
+            <g:shipping>
+              <g:country>CO</g:country>
+              <g:service>Standard</g:service>
+              <g:price>0 COP</g:price>
+            </g:shipping>
+            <g:tax>
+              <g:country>CO</g:country>
+              <g:rate>19</g:rate>
+              <g:tax_ship>true</g:tax_ship>
+            </g:tax>
           </item>
         `}).join('')}
       </channel>
