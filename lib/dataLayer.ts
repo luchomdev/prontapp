@@ -216,7 +216,7 @@ export function parseMeasures(measures: string | { [key: string]: string }): { [
 
 export const getCategoriesPublic = cache(async (): Promise<Category[]> => {
     try {
-        const response = await fetch(`${API_BASE_URL}/categories/public`, { next: { revalidate: 0 } });
+        const response = await fetch(`${API_BASE_URL}/categories/public`, { next: { revalidate: 3600 } });
         if (!response.ok) {
             throw new Error('Failed to fetch categories');
         }
@@ -299,7 +299,7 @@ export const getProductsByCategoriesHome = cache(async (): Promise<HomeCategorie
 
 export const getPublicHighlightCategories = cache(async (): Promise<HighlightCategory[]> => {
     try {
-        const response = await fetch(`${API_BASE_URL}/categories/highlight`, { next: { revalidate: 0 } });
+        const response = await fetch(`${API_BASE_URL}/categories/highlight`, { next: { revalidate: 3600 } });
         if (!response.ok) {
             throw new Error('Failed to fetch highlight categories');
         }

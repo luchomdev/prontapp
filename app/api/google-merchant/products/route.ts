@@ -42,7 +42,8 @@ export async function GET(request: NextRequest) {
             const productImages = parseProductImages(product.images);
             const firstImageUrl = productImages[0]?.url || "";
             const productSlug = product.seo_slug || generateSlug(product.name);
-            const productPrice = `${product.precio_final.toFixed(2)} COP`; // Cambio a COP
+            //const productPrice = `${product.precio_final.toFixed(2)} COP`; // Cambio a COP
+            const productPrice = `${Number(product.precio_final).toFixed(2)} COP`;
             const productCondition = "new"; // Se puede cambiar si hay información
             const productBrand = "Sin marca"; // Si no tiene marca, indicar
 
