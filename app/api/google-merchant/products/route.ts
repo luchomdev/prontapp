@@ -1,25 +1,34 @@
 // app/api/google-merchant/products/route.ts
-import { type NextRequest } from 'next/server'
-import { getProductsPublic, parseProductImages } from '@/lib/dataLayer'
+import { type NextRequest } from "next/server";
+import { getProductsPublic, parseProductImages } from "@/lib/dataLayer";
 
 function generateSlug(text: string): string {
   return text
     .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/ñ/g, 'n')
-    .replace(/[^a-z0-9\s-]/g, '')
-    .replace(/\s+/g, '-')
-    .replace(/-+/g, '-')
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/ñ/g, "n")
+    .replace(/[^a-z0-9\s-]/g, "")
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-")
     .trim()
-    .replace(/^-+|-+$/g, '');
+    .replace(/^-+|-+$/g, "");
+}
+
+function escapeXml(unsafe: string): string {
+  return unsafe
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&apos;");
 }
 
 export async function GET(request: NextRequest) {
   try {
     const { products } = await getProductsPublic({
-        limit: 1000,
-        page: 1
+      limit: 1000,
+      page: 1,
     });
 
     const xml = `<?xml version="1.0" encoding="UTF-8"?>
@@ -28,49 +37,41 @@ export async function GET(request: NextRequest) {
         <title>Prontapp Store Products</title>
         <link>${process.env.DOMAIN_URL}</link>
         <description>Productos de Prontapp</description>
-        ${products.map(product => {
-          const productImages = parseProductImages(product.images);
-          const firstImageUrl = productImages[0]?.url || '';
-          const productSlug = product.seo_slug || generateSlug(product.name);
+        ${products
+          .map((product) => {
+            const productImages = parseProductImages(product.images);
+            const firstImageUrl = productImages[0]?.url || "";
+            const productSlug = product.seo_slug || generateSlug(product.name);
+            const productPrice = `${product.precio_final.toFixed(2)} COP`; // Cambio a COP
+            const productCondition = "new"; // Se puede cambiar si hay información
+            const productBrand = "Sin marca"; // Si no tiene marca, indicar
 
-          return `
+            return `
           <item>
             <g:id>${product.stock_id}</g:id>
             <g:title>${escapeXml(product.name)}</g:title>
             <g:description>${escapeXml(product.description)}</g:description>
             <g:link>${process.env.DOMAIN_URL}/product/${product.id}/${productSlug}</g:link>
             <g:image_link>${escapeXml(firstImageUrl)}</g:image_link>
-            <g:availability>${Number(product.amount) > 0 ? 'in stock' : 'out of stock'}</g:availability>
-            <g:price>${product.precio_final} COP</g:price>
-            <g:brand>Prontapp</g:brand>
-            <g:condition>new</g:condition>
-            <g:identifier_exists>no</g:identifier_exists>
-          </item>
-        `}).join('')}
+            <g:availability>${
+              Number(product.amount) > 0 ? "in stock" : "out of stock"
+            }</g:availability>
+            <g:price>${productPrice}</g:price>
+            <g:condition>${productCondition}</g:condition>
+            <g:brand>${productBrand}</g:brand>
+          </item>`;
+          })
+          .join("\n")}
       </channel>
     </rss>`;
 
     return new Response(xml, {
       headers: {
-        'Content-Type': 'application/xml',
-        'Cache-Control': 'public, s-maxage=86400' // Cache por 24 horas
-      }
-    })
+        "Content-Type": "application/xml",
+      },
+    });
   } catch (error) {
-    console.error('Error generating merchant feed:', error);
-    return new Response('Error generating feed', { status: 500 })
+    console.error("Error generating Google Merchant XML:", error);
+    return new Response("Error generating feed", { status: 500 });
   }
-}
-
-function escapeXml(unsafe: string) {
-  return unsafe?.replace(/[<>&'"]/g, function (c) {
-    switch (c) {
-      case '<': return '&lt;';
-      case '>': return '&gt;';
-      case '&': return '&amp;';
-      case '\'': return '&apos;';
-      case '"': return '&quot;';
-      default: return c;
-    }
-  }) || '';
 }
