@@ -51,6 +51,14 @@ jobs:
           DOMAIN_URL=https://www.prontapp.co
           HTTP_S_DOMAIN_URL=https://www.prontapp.co
           NEXT_PUBLIC_FBPIXEL=930982188631486
+          NEXT_PUBLIC_VAPID_PUBLIC_KEY=BFST8vYrwU6w7d_qQH6WgnwXAdG4v4aIPY8anZmkBEYcAZTdCanxxbO1ZKMlSYpxVw8enMZTAOlZO6y5-ch25zg
+          VAPID_PRIVATE_KEY=n2hS9oVrayQI97Lp5dR7cQDPrRfM_GL4GHLuQVLuN9M
+          VAPID_EMAIL=noresponder@prontapp.co
+          POSTGRES_USER='node_pg_nexus'
+          POSTGRES_PASSWORD='Sonoma2024'
+          POSTGRES_HOST='localhost'
+          POSTGRES_PORT='5432'
+          POSTGRES_DATABASE='nodenexus'
           EOF
 
       - name: Deploy to EC2

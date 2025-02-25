@@ -10,14 +10,12 @@ import CartSidebar from '@/components/CartSidebar';
 import LocationPopover from '@/components/LocationPopover';
 import ModalSearchMini from '@/components/ModalSearchMini';
 import SearchBox from '@/components/SearchBox';
-//import HighlightCategoriesHeader from '@/components/HightlightCategoriesHeader';
 import { Category, HighlightCategory } from '@/lib/dataLayer';
 import ModalSignIn from '@/components/ModalSignin';
 import ModalCustomerZone from '@/components/auth/ModalCustomerZone';
 import { useStore } from '@/stores/cartStore';
 import { useCurrentUser, useIsAuthenticated } from '@/lib/clientAuthHelper';
 import HeaderSkeleton from './skeletons/SkeletonHeader';
-//import ColFlag from '@/components/ColFlag';
 import { formatCurrency } from '@/lib/Helpers';
 
 
@@ -41,7 +39,7 @@ const Header: React.FC<HeaderProps> = ({ categories, highlightCategories }) => {
         openCartSidebar,
         closeCartSidebar,
         isLoginModalOpen,
-        openLoginModal,    // Agregamos esta línea
+        openLoginModal,
         closeLoginModal,
     } = useStore((state) => ({
         isLoading: state.isLoading,
@@ -54,14 +52,12 @@ const Header: React.FC<HeaderProps> = ({ categories, highlightCategories }) => {
         openCartSidebar: state.openCartSidebar,
         closeCartSidebar: state.closeCartSidebar,
         isLoginModalOpen: state.isLoginModalOpen,
-        openLoginModal: state.openLoginModal,    // Agregamos esta línea
+        openLoginModal: state.openLoginModal,
         closeLoginModal: state.closeLoginModal,
     }));
     const [isCategorySidebarOpen, setIsCategorySidebarOpen] = useState(false);
     const locationButtonRef = useRef<HTMLButtonElement>(null);
     const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
-    // const [isSignInModalOpen, setIsSignInModalOpen] = useState(false);
-
     const [isCustomerZoneOpen, setIsCustomerZoneOpen] = useState(false);
     const customerZoneButtonRef = useRef<HTMLButtonElement>(null);
 
@@ -75,10 +71,7 @@ const Header: React.FC<HeaderProps> = ({ categories, highlightCategories }) => {
         router.push(`/products/${category.id}/${category.slug}`);
         setIsCategorySidebarOpen(false);
     };
-    /* useEffect(() => {
-        checkAndShowLocationModal();
-    }, [checkAndShowLocationModal]);
- */
+
     const handleCustomerZoneClick = () => {
         setIsCustomerZoneOpen(!isCustomerZoneOpen);
     };
@@ -93,72 +86,70 @@ const Header: React.FC<HeaderProps> = ({ categories, highlightCategories }) => {
         return <HeaderSkeleton />;
     }
     return (
-        <header className="w-full">
+        <header className="w-full max-w-screen overflow-hidden">
             {/* primera fila donde esta la bandera, ubicacion e inicio de sesion */}
-            <div className="bg-[#FF8B39] h-10 flex items-center justify-between px-4 text-white">
+            <div className="bg-[#FF8B39] h-10 flex items-center justify-between px-2 sm:px-4 text-white">
                 <div className="flex items-center">
-                    {/* <ColFlag /> */}
-                    <span className=" text-xl leading-5 mr-2">🇨🇴</span>
+                    <span className="text-xl leading-5 mr-1 sm:mr-2">🇨🇴</span>
                     <span className="text-xs font-bold">COLOMBIA</span>
                 </div>
                 <div className="flex items-center">
                     <button
-                        className="flex items-center mr-4"
+                        className="flex items-center mr-2 sm:mr-4"
                         ref={locationButtonRef}
                         onClick={openLocationModal}
                     >
                         <FaMapMarkerAlt className="mr-1" />
-                        <span className="text-sm sm:text-base">
-                            {shippingAddress ? "Cambiar ubicación" : "Establecer ubicación"}
+                        <span className="text-xs sm:text-sm">
+                            {shippingAddress ? "Cambiar" : "Ubicación"}
                         </span>
                     </button>
                     {isAuthenticated && user ? (
                         <button
-                            className="flex items-center"
+                            className="flex items-center text-xs sm:text-sm"
                             onClick={handleCustomerZoneClick}
                             ref={customerZoneButtonRef}
                         >
-                            Hola, {user?.name}
+                            Hola, {user?.name?.split(' ')[0]}
                             <MdKeyboardArrowDown className="ml-1" />
                         </button>
                     ) : (
-
-
-                        <button className="flex items-center" onClick={openLoginModal}>
+                        <button className="flex items-center text-xs sm:text-sm" onClick={openLoginModal}>
                             <FaUser className="mr-1" />
-                            Regístrate o Inicia sesión
+                            <span className="hidden xs:inline">Regístrate o Inicia sesión</span>
+                            <span className="xs:hidden">Ingresar</span>
                         </button>
-
                     )}
-
                 </div>
             </div>
             {/* logo, buscador, cart y articulos recientes desktop size */}
-            <div className="bg-black h-[80px] sm:h-[90px] md:h-[100px] flex items-center justify-between px-4 transition-all duration-300">
-                <div className="flex items-center space-x-4">
+            <div className="bg-black h-[70px] sm:h-[80px] md:h-[90px] flex items-center justify-between px-2 sm:px-4 transition-all duration-300">
+                <div className="flex items-center space-x-2 sm:space-x-4">
                     <Logo />
-                    <div className=' flex px-4 items-center justify-between space-x-4' onClick={() => setIsCategorySidebarOpen(true)}>
-                        <h1 className=' text-xl md:text-2xl font-bold text-white cursor-pointer'>Menú</h1>
-                        <FaBars className="text-white mr-4 text-xl sm:text-2xl  cursor-pointer" />
+                    <div className='flex items-center justify-between space-x-2 sm:space-x-4' onClick={() => setIsCategorySidebarOpen(true)}>
+                        <h1 className='text-lg md:text-xl font-bold text-white cursor-pointer'>Menú</h1>
+                        <FaBars className="text-white text-lg sm:text-xl cursor-pointer" />
                     </div>
                 </div>
 
                 <SearchBox />
 
                 <div className="flex items-center text-white">
-                    <FaSearch onClick={() => setIsSearchModalOpen(true)} className="mr-4 text-xl sm:text-2xl md:hidden lg:hidden cursor-pointer" />
-                    <Link href={`/recently-viewed-products`}><FaHistory className="mr-4 text-xl sm:text-2xl hidden lg:block" /></Link>
-                    <div className="flex flex-col sm:flex-row items-end sm:items-center">
+                    <FaSearch onClick={() => setIsSearchModalOpen(true)} className="mr-3 text-lg sm:text-xl md:hidden lg:hidden cursor-pointer" />
+                    <Link href={`/recently-viewed-products`}><FaHistory className="mr-3 text-lg sm:text-xl hidden lg:block" /></Link>
+                    <div className="flex flex-col items-center">
                         <div
-                            className={`relative mb-1 sm:mb-0 mr-2 sm:mr-4 ${totalItems > 0 ? 'cursor-pointer' : 'cursor-not-allowed opacity-50'}`}
+                            className={`relative mb-1 ${totalItems > 0 ? 'cursor-pointer' : 'cursor-not-allowed opacity-50'}`}
                             onClick={handleCartClick}
                         >
-                            <FaShoppingCart className="text-xl sm:text-2xl" />
-                            <span className="absolute -top-2 -right-2 bg-[#FF8B39] rounded-full text-xs w-4 h-4 sm:w-5 sm:h-5 flex items-center justify-center">
+                            <FaShoppingCart className="text-lg sm:text-xl" />
+                            <span className="absolute -top-2 -right-2 bg-[#FF8B39] rounded-full text-xs w-4 h-4 flex items-center justify-center">
                                 {totalItems}
                             </span>
                         </div>
-                        <span className="text-sm sm:text-base">{formatCurrency(Number(subtotalsValue.toFixed(0)))}</span>
+                        <span className="text-xs sm:text-sm truncate max-w-[70px] sm:max-w-full">
+                            {formatCurrency(Number(subtotalsValue.toFixed(0)))}
+                        </span>
                     </div>
                 </div>
             </div>

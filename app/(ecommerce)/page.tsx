@@ -29,7 +29,7 @@ export async function generateMetadata(
       description: `Explora ${Object.keys(categoriesData).length} categorías de productos con los mejores precios y calidad.`,
       images: [
         {
-          url: 'https://pront.app/og-home.jpg',
+          url: 'https://www.prontapp.co/og-home.jpg',
           width: 1200,
           height: 630,
           alt: 'Prontapp E-commerce - Página de inicio',
@@ -41,7 +41,7 @@ export async function generateMetadata(
       card: 'summary_large_image',
       title: 'Prontapp E-commerce | Compra online fácil y seguro',
       description: `Las mejores ofertas en ${Object.keys(categoriesData).length} categorías de productos.`,
-      images: ['https://pront.app/x-home.jpg'],
+      images: ['https://www.prontapp.co/x-home.jpg'],
     },
   }
 }

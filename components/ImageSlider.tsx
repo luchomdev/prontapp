@@ -26,41 +26,58 @@ const ImageSlider: React.FC<ImageSliderProps> = ({ images }) => {
   }
 
   return (
-    <div className="relative w-full" style={{ aspectRatio: '2500 / 600' }}>
+    <div className="relative w-full h-[200px] sm:h-[300px] overflow-hidden transition-all duration-300">
       <Link href={images[currentIndex].link} className="block w-full h-full relative">
         <Image
           src={images[currentIndex].image_data}
           alt={images[currentIndex].title}
           fill
-          sizes="100vw"
+          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 100vw, 100vw"
           style={{
             objectFit: 'cover',
             objectPosition: 'center',
           }}
           priority
+          quality={90}
         />
       </Link>
       <button
-        onClick={goToPrevious}
-        className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-white bg-opacity-50 p-2 rounded-full z-10"
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation(); 
+          goToPrevious();
+        }}
+        className="absolute left-2 sm:left-4 top-1/2 transform -translate-y-1/2 bg-white bg-opacity-60 hover:bg-opacity-80 p-1 sm:p-2 rounded-full z-10 transition-all duration-200 focus:outline-none"
         aria-label="Previous image"
       >
-        <FaChevronLeft />
+        <FaChevronLeft className="text-sm sm:text-base" />
       </button>
       <button
-        onClick={goToNext}
-        className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-white bg-opacity-50 p-2 rounded-full z-10"
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          goToNext();
+        }}
+        className="absolute right-2 sm:right-4 top-1/2 transform -translate-y-1/2 bg-white bg-opacity-60 hover:bg-opacity-80 p-1 sm:p-2 rounded-full z-10 transition-all duration-200 focus:outline-none"
         aria-label="Next image"
       >
-        <FaChevronRight />
+        <FaChevronRight className="text-sm sm:text-base" />
       </button>
-      <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex space-x-2 z-10">
+      <div className="absolute bottom-3 left-1/2 transform -translate-x-1/2 flex space-x-1.5 z-10">
         {images.map((_, index) => (
           <div
             key={index}
-            className={`w-3 h-3 rounded-full ${
-              index === currentIndex ? 'bg-white' : 'bg-gray-300'
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setCurrentIndex(index);
+            }}
+            className={`w-1.5 h-1.5 sm:w-2.5 sm:h-2.5 rounded-full transition-all duration-300 cursor-pointer ${
+              index === currentIndex ? 'bg-white scale-125' : 'bg-gray-300 bg-opacity-70 hover:bg-opacity-100'
             }`}
+            aria-label={`Go to slide ${index + 1}`}
+            role="button"
+            tabIndex={0}
           />
         ))}
       </div>

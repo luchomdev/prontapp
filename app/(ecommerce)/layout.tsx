@@ -12,6 +12,9 @@ import Hydration from "@/components/Hydration";
 import ModalSetAddress from "@/components/ModalSetAddress";
 import { AuthInitializer } from "@/components/auth/AuthInitializer";
 import Analytics from '@/components/Analytics'
+import SubscribeToPush from "@/components/notifications/SubscribeToPush";
+import InstallPrompt from "@/components/notifications/InstallPrompt";
+import { AppleSplashScreen } from "@/components/AppleSplashScreen";
 
 const inter = Inter({ subsets: ["latin"] });
 const fbpixel = process.env.NEXT_PUBLIC_FBPIXEL;
@@ -48,6 +51,71 @@ export async function generateMetadata(): Promise<Metadata> {
           'es-CO': '/',
         },
       },
+      manifest: '/manifest.json',
+      // Configuración PWA
+      appleWebApp: {
+        capable: true,
+        statusBarStyle: 'black-translucent',
+        title: 'Prontapp',
+        startupImage: [
+          {
+            url: '/splash/splash-320x426.png',
+            media: '(device-width: 320px) and (device-height: 426px)'
+          },
+          {
+            url: '/splash/splash-320x470.png',
+            media: '(device-width: 320px) and (device-height: 470px)'
+          },
+          {
+            url: '/splash/splash-480x640.png',
+            media: '(device-width: 480px) and (device-height: 640px)'
+          },
+          {
+            url: '/splash/splash-720x960.png',
+            media: '(device-width: 720px) and (device-height: 960px)'
+          },
+          {
+            url: '/splash/splash-750x1334.png',
+            media: '(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2)'
+          },
+          {
+            url: '/splash/splash-960x1280.png',
+            media: '(device-width: 960px) and (device-height: 1280px)'
+          },
+          {
+            url: '/splash/splash-1125x2436.png',
+            media: '(device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3)'
+          },
+          {
+            url: '/splash/splash-1242x2208.png',
+            media: '(device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3)'
+          },
+          {
+            url: '/splash/splash-1280x1920.png',
+            media: '(device-width: 1280px) and (device-height: 1920px)'
+          },
+          {
+            url: '/splash/splash-1536x2048.png',
+            media: '(device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2)'
+          },
+          {
+            url: '/splash/splash-1668x2224.png',
+            media: '(device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2)'
+          },
+          {
+            url: '/splash/splash-2048x2732.png',
+            media: '(device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2)'
+          }
+        ]
+      },
+      other: {
+        'facebook-domain-verification': 'cyijuhhuin4rp3tdq6vj5hcle6mq35',
+        'mobile-web-app-capable': 'yes',
+        'apple-mobile-web-app-status-bar-style': 'black-translucent',
+        'apple-mobile-web-app-title': 'Prontapp',
+        // Agregar estas líneas específicas para splash screen
+        'apple-touch-startup-image': '/splash/splash-2048x2732.png'
+      },
       openGraph: {
         title: "Prontapp E-commerce | Tu tienda en línea favorita",
         description: `Explora ${categories.length} categorías de productos con los mejores precios y calidad.`,
@@ -70,9 +138,6 @@ export async function generateMetadata(): Promise<Metadata> {
         description: `Las mejores ofertas en ${categories.length} categorías de productos.`,
         images: ['https://www.prontapp.co/storage/images/twitter-card.jpg'],
         creator: '@prontapp',
-      },
-      other: {
-        'facebook-domain-verification': 'cyijuhhuin4rp3tdq6vj5hcle6mq35'
       }
     };
   } catch (error) {
@@ -80,8 +145,26 @@ export async function generateMetadata(): Promise<Metadata> {
     return {
       title: "Prontapp E-commerce",
       description: "Tu tienda en línea favorita de artículos en tendencia",
+      manifest: '/manifest.json',
+      appleWebApp: {
+        capable: true,
+        statusBarStyle: 'default',
+        title: 'Prontapp'
+      },
+      themeColor: '#2563EB',
+      viewport: {
+        width: 'device-width',
+        initialScale: 1,
+        maximumScale: 1,
+        userScalable: false,
+        viewportFit: 'cover'
+      },
       other: {
-        'facebook-domain-verification': 'cyijuhhuin4rp3tdq6vj5hcle6mq35'
+        'facebook-domain-verification': 'cyijuhhuin4rp3tdq6vj5hcle6mq35',
+        'mobile-web-app-capable': 'yes',
+        'apple-mobile-web-app-capable': 'yes',
+        'apple-mobile-web-app-status-bar-style': 'default',
+        'apple-mobile-web-app-title': 'Prontapp'
       }
     };
   }
@@ -115,13 +198,38 @@ export default async function RootLayout({
               `
             }}
           />
+          <script
+            id="register-sw"
+            dangerouslySetInnerHTML={{
+              __html: `
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', async () => {
+          try {
+            console.log('Iniciando registro de SW');
+            const registration = await navigator.serviceWorker.register('/sw.js');
+            console.log('Service Worker registrado:', registration);
+
+            registration.addEventListener('statechange', (e) => {
+              console.log('Estado del SW cambiado:', e.target.state);
+            });
+          } catch (error) {
+            console.error('Error al registrar SW:', error);
+          }
+        });
+      } else {
+        console.log('Service Worker no soportado');
+      }
+    `
+            }}
+          />
+          <AppleSplashScreen />
         </head>
         <body className={inter.className}>
-        <noscript>
-            <iframe 
+          <noscript>
+            <iframe
               src="https://www.googletagmanager.com/ns.html?id=GTM-PJBN2VS3"
-              height="0" 
-              width="0" 
+              height="0"
+              width="0"
               style={{ display: 'none', visibility: 'hidden' }}
             />
           </noscript>
@@ -157,10 +265,14 @@ export default async function RootLayout({
               `
             }}
           />
-          
+
           <Hydration />
           <AuthInitializer />
           <Header categories={categories} highlightCategories={highlightCategories} />
+          <InstallPrompt />
+          <div className="fixed bottom-4 right-4 z-50">
+            <SubscribeToPush />
+          </div>
           <Main>{children}</Main>
           <Footer />
           <ScrollToTop />
@@ -205,7 +317,7 @@ export default async function RootLayout({
         <body className={inter.className}>
           <div>Error cargando la página. Por favor, intente más tarde.</div>
           <Analytics />
-          
+
           {/* AdRoll Scripts */}
           <Script
             id="adroll-setup"

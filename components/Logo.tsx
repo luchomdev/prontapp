@@ -41,12 +41,12 @@ const Logo: React.FC = () => {
   }
 
   return (
-    <Link href="/" className="relative w-[200px] h-[40px] sm:w-[240px] sm:h-[50px] md:w-[290px] md:h-[60px] transition-all duration-300">
+    <Link href="/" className="relative w-[120px] h-[30px] sm:w-[200px] sm:h-[45px] md:w-[250px] md:h-[55px] transition-all duration-300">
       <Image
         src={logoUrl}
         alt="Prontapp productos de tendencia en colombia"
         fill
-        sizes="(max-width: 768px) 200px, (max-width: 1200px) 250px, 300px"
+        sizes="(max-width: 640px) 120px, (max-width: 768px) 200px, 250px"
         style={{ objectFit: 'contain' }}
         priority
       />
