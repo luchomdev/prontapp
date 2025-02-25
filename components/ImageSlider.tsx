@@ -26,7 +26,7 @@ const ImageSlider: React.FC<ImageSliderProps> = ({ images }) => {
   }
 
   return (
-    <div className="relative w-full h-[200px] sm:h-[300px] overflow-hidden transition-all duration-300">
+    <div className="relative w-full h-[200px] sm:h-[350px] overflow-hidden transition-all duration-300">
       <Link href={images[currentIndex].link} className="block w-full h-full relative">
         <Image
           src={images[currentIndex].image_data}
