@@ -8,7 +8,7 @@ const DownloadAppCard: React.FC = async () => {
 
   return (
     <div className="bg-gray-800 p-4 rounded-lg max-w-52">
-      <h3 className="text-md font-bold mb-4 text-center">DESCARGA LA APP</h3>
+      <h3 className="text-md font-bold mb-4 text-center">INSTALA LA APP</h3>
       <div className="w-40 h-40 mx-auto mb-4 relative">
         <Image
           src={`${qrCodeBase64}`}
