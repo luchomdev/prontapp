@@ -33,8 +33,9 @@ jobs:
           echo "$SSH_PRIVATE_KEY" > ~/.ssh/deploy_key
           echo "$DEPLOY_KEY" > ~/.ssh/github_deploy_key
           chmod 600 ~/.ssh/deploy_key ~/.ssh/github_deploy_key
-          echo -e "StrictHostKeyChecking no\n" > ~/.ssh/config
-          echo -e "Host ec2\n\tHostName $SSH_HOST\n\tUser $SSH_USER\n\tIdentityFile ~/.ssh/deploy_key\n\tStrictHostKeyChecking no" >> ~/.ssh/config
+          # Configuración SSH mejorada con opciones de keep-alive
+          echo -e "Host *\n\tServerAliveInterval 60\n\tServerAliveCountMax 60\n\tTCPKeepAlive yes\n\tStrictHostKeyChecking no\n" > ~/.ssh/config
+          echo -e "Host ec2\n\tHostName $SSH_HOST\n\tUser $SSH_USER\n\tIdentityFile ~/.ssh/deploy_key\n\tConnectTimeout 30\n\tStrictHostKeyChecking no" >> ~/.ssh/config
           echo -e "Host github.com\n\tIdentityFile ~/.ssh/github_deploy_key\n\tStrictHostKeyChecking no" >> ~/.ssh/config
 
       - name: Create env file
@@ -66,35 +67,36 @@ jobs:
           DEPLOY_PATH="/var/www/frontend"
           
           echo "Setting up GitHub SSH key on EC2..."
-          scp ~/.ssh/github_deploy_key ec2:~/.ssh/
-          ssh ec2 "chmod 600 ~/.ssh/github_deploy_key"
+          scp -o ServerAliveInterval=60 -o ServerAliveCountMax=60 ~/.ssh/github_deploy_key ec2:~/.ssh/
+          ssh -o ServerAliveInterval=60 -o ServerAliveCountMax=60 ec2 "chmod 600 ~/.ssh/github_deploy_key"
           
           echo "Creating deployment directory..."
-          ssh ec2 "sudo rm -rf ${DEPLOY_PATH} && \
+          ssh -o ServerAliveInterval=60 -o ServerAliveCountMax=60 ec2 "sudo rm -rf ${DEPLOY_PATH} && \
               sudo mkdir -p ${DEPLOY_PATH} && \
               sudo chown -R ubuntu:ubuntu ${DEPLOY_PATH}"
           
           echo "Cloning repository..."
-          ssh ec2 "cd /var/www && \
+          ssh -o ServerAliveInterval=60 -o ServerAliveCountMax=60 ec2 "cd /var/www && \
               GIT_SSH_COMMAND='ssh -i ~/.ssh/github_deploy_key' git clone git@github.com:prontappsas/prontappweb.git frontend && \
               cd frontend && \
               git checkout prod"
           
           echo "Copying environment file..."
-          scp -v .env.production ec2:${DEPLOY_PATH}/.env.production
+          scp -o ServerAliveInterval=60 -o ServerAliveCountMax=60 .env.production ec2:${DEPLOY_PATH}/.env.production
           
           echo "Installing dependencies..."
-          ssh ec2 "cd ${DEPLOY_PATH} && \
+          ssh -o ServerAliveInterval=60 -o ServerAliveCountMax=60 ec2 "cd ${DEPLOY_PATH} && \
               npm cache clean --force && \
-              npm install"
+              npm install --no-fund --no-audit --prefer-offline"
           
           echo "Building application..."
-          ssh ec2 "cd ${DEPLOY_PATH} && npm run build"
+          # Dividimos el comando de construcción para evitar tiempos de espera largos
+          ssh -o ServerAliveInterval=60 -o ServerAliveCountMax=60 ec2 "cd ${DEPLOY_PATH} && NODE_OPTIONS='--max-old-space-size=512' npm run build"
           
           echo "Starting/Restarting PM2..."
-          ssh ec2 "cd ${DEPLOY_PATH} && pm2 restart ecosystem.config.js || pm2 start ecosystem.config.js"
+          ssh -o ServerAliveInterval=60 -o ServerAliveCountMax=60 ec2 "cd ${DEPLOY_PATH} && pm2 restart ecosystem.config.js || pm2 start ecosystem.config.js"
 
       - name: Verify Deployment
         if: success()
         run: |
-          ssh ec2 "cd ${DEPLOY_PATH} && pwd && ls -la && pm2 list"
+          ssh -o ServerAliveInterval=60 -o ServerAliveCountMax=60 ec2 "cd ${DEPLOY_PATH} && pwd && ls -la && pm2 list"
