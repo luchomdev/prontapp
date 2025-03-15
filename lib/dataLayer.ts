@@ -380,6 +380,25 @@ export const getSliderImages = cache(async (): Promise<BannerImage[]> => {
     }
 });
 
+export const getSliderMobileImages = cache(async (): Promise<BannerImage[]> => {
+    try {
+        const response = await fetch(`${API_BASE_URL}/banners/active?platform=mobile`, { next: { revalidate: 0 } });
+        if (!response.ok) {
+            throw new Error('Failed to fetch mobile banner images');
+        }
+        const data: BannerImage[] = await response.json();
+
+        // Añadir el prefijo IMAGE_BASE_URL a image_data
+        return data.map(banner => ({
+            ...banner,
+            image_data: `${IMAGE_BASE_URL}${banner.image_data}`
+        }));
+    } catch (error) {
+        console.error('Error fetching mobile banner images:', error);
+        throw error;
+    }
+});
+
 export const getQRCode = cache(async (): Promise<string> => {
     try {
         const response = await fetch(`${API_BASE_URL}/app-download/qr-code`, { next: { revalidate: 0 } }); // Cache por 24 horas

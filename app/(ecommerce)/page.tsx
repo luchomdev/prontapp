@@ -4,7 +4,7 @@ import ImageSlider from "@/components/ImageSlider";
 import NewsletterSubscription from "@/components/NewsletterSubscription";
 import ProductCategorySection from '@/components/ProductCategorySection';
 import RecentlyViewed from "@/components/RecentlyViewed";
-import { getProductsByCategoriesHome, getSliderImages, getProductsPublic, getTrendyProducts, getDiscountProducts, getBestSellerProducts, getPublicConfig } from "@/lib/dataLayer";
+import { getProductsByCategoriesHome, getSliderImages, getProductsPublic, getTrendyProducts, getDiscountProducts, getBestSellerProducts, getPublicConfig, getSliderMobileImages } from "@/lib/dataLayer";
 import ProductSectionContainer from '@/components/home/ProductSectionContainer';
 import ProntappAdvantages from '@/components/ProntappAdvantages';
 
@@ -51,7 +51,11 @@ export default async function Home() {
     // Datos config
     const config = await getPublicConfig("urlAllHotdeals,titleHotdeals,catHotdeals,titleProductsWithDiscounts,urlProductsWithDiscounts,titleTrendyProducts,urlTrendyProducts,titleBestsellerProducts,urlBestsellerProducts")
     const categoriesData = await getProductsByCategoriesHome();
-    const headersBanners = await getSliderImages();
+
+    const [headersBanners, headersMobileBanners] = await Promise.all([
+      getSliderImages(),
+      getSliderMobileImages()
+    ]);
     const hotDealsProducts = await getProductsPublic({ category_id: config.catHotdeals ? config.catHotdeals : "cb587118-4629-4ba6-a390-c613a04aac9b", limit: 20 })
     const hotDeals = hotDealsProducts.products.map((product) => ({
       id: product.id,
@@ -97,7 +101,10 @@ export default async function Home() {
 
     return (
       <div className="flex flex-col min-h-screen">
-        <ImageSlider images={headersBanners} />
+        <ImageSlider
+          images={headersBanners}
+          mobileImages={headersMobileBanners}
+        />
         {hotDeals && hotDeals.length > 0 &&
           <ProductSectionContainer
             title={config.titleHotdeals ? config.titleHotdeals : ""}
@@ -109,7 +116,7 @@ export default async function Home() {
 
         {discountedProducts && discountedProducts.length > 0 &&
           <ProductSectionContainer
-            title={config.titleProductsWithDiscounts ? config.titleProductsWithDiscounts : "" }
+            title={config.titleProductsWithDiscounts ? config.titleProductsWithDiscounts : ""}
             viewAllLink={config.urlProductsWithDiscounts ? config.urlProductsWithDiscounts : ""}
             products={discountedProducts}
             isHighlight={true}
@@ -119,14 +126,14 @@ export default async function Home() {
         {trendyProducts && trendyProducts.length > 0 &&
           <ProductSectionContainer
             title={config.titleTrendyProducts ? config.titleTrendyProducts : ""}
-            viewAllLink={config.urlTrendyProducts ? config.urlTrendyProducts : "" }
+            viewAllLink={config.urlTrendyProducts ? config.urlTrendyProducts : ""}
             products={trendyProducts}
           />
         }
 
         {bestSellerProducts && bestSellerProducts.length > 0 &&
           <ProductSectionContainer
-            title={config.titleBestsellerProducts ? config.titleBestsellerProducts : "" }
+            title={config.titleBestsellerProducts ? config.titleBestsellerProducts : ""}
             viewAllLink={config.urlBestsellerProducts ? config.urlBestsellerProducts : ""}
             products={bestSellerProducts}
           />
