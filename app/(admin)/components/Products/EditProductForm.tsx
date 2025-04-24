@@ -107,6 +107,8 @@ const EditProductForm: React.FC = () => {
                 seo_description: product.seo_description,
                 seo_slug: product.seo_slug,
                 amount: product.amount,
+                price_by_unit: product.price_by_unit,
+                minimal_price: product.minimal_price,
             });
 
             setToasterMessage(result.message);
@@ -200,7 +202,13 @@ const EditProductForm: React.FC = () => {
 
                 <div>
                     <label className="block text-sm font-medium text-gray-700">Precio al público(price_by_unit)</label>
-                    <input type="text" value={product.price_by_unit} readOnly className="mt-1 block w-full p-2 border border-gray-300 rounded-md bg-gray-100" />
+                    <input 
+                        type="text" 
+                        name="price_by_unit" 
+                        value={product.price_by_unit} 
+                        onChange={handleInputChange} 
+                        className="mt-1 block w-full p-2 border border-gray-300 rounded-md" 
+                    />
                 </div>
 
                 <div>

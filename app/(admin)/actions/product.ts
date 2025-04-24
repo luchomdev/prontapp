@@ -36,15 +36,17 @@ export interface Product {
 }
 
 interface ProductUpdateData {
-    name: string;
-    description: string;
-    category_id: string | null;
-    discount: number | null;
-    min_qty: number;
-    seo_keywords: string | null;
-    seo_description: string | null;
-    seo_slug: string | null;
-    amount: number;
+  name: string;
+  description: string;
+  category_id: string | null;
+  discount: number | null;
+  min_qty: number;
+  seo_keywords: string | null;
+  seo_description: string | null;
+  seo_slug: string | null;
+  amount: number;
+  price_by_unit: string;
+  minimal_price: string;
 }
 
 // Obtener detalles de un producto específico

@@ -2,7 +2,7 @@
 import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { FaChevronRight } from 'react-icons/fa';
+import { FaChevronRight, FaMoneyBillWave } from 'react-icons/fa';
 import { formatCurrency } from '@/lib/Helpers';
 
 interface Product {
@@ -70,6 +70,10 @@ const ProductCardHighlight: React.FC<ProductCardHighlightProps> = ({ product }) 
           <p className="text-sm font-bold text-orange-500">
             {formatCurrency(product.precio_final)}
           </p>
+        </div>
+        <div className="flex items-center mt-1.5 mb-1.5">
+          <FaMoneyBillWave className="text-green-700 text-xs mr-1" />
+          <span className="text-xs text-green-700 font-medium">Pago Contraentrega</span>
         </div>
         <Link 
           href={`/product/${product.id}/${product.seo_slug}`}

@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { FaShoppingCart, FaEye } from 'react-icons/fa';
+import { FaShoppingCart, FaEye, FaMoneyBillWave } from 'react-icons/fa';
 import { ProductOrProductForHome, parseProductImages } from '@/lib/dataLayer';
 import { useStore } from '@/stores/cartStore';
 import Toaster from '@/components/Toaster';
@@ -79,6 +79,10 @@ const HomeCardProduct: React.FC<HomeCardProductProps> = ({ product }) => {
         ) : (
           <span className="font-bold text-xs md:text-sm">{formatCurrency(Number(product.precio_final))}</span>
         )}
+      </div>
+      <div className="flex items-center mb-1">
+        <FaMoneyBillWave className="text-green-700 text-2xs md:text-xs mr-1" />
+        <span className="text-2xs md:text-xs text-green-700">Pago Contraentrega</span>
       </div>
       <div className="flex items-center mb-1 md:mb-2">
         {[1, 2, 3, 4, 5].map((star) => (

@@ -1,6 +1,7 @@
 import React from 'react';
 import RatingStars from '@/components/RatingStars';
 import { formatCurrency } from '@/lib/Helpers';
+import { FaMoneyBillWave } from 'react-icons/fa';
 
 interface ProductInfoProps {
   name: string;
@@ -51,6 +52,10 @@ const ProductInfo: React.FC<ProductInfoProps> = ({
             {formatCurrency(currentPrice)}
           </p>
         )}
+      </div>
+      <div className="flex items-center mt-2">
+        <FaMoneyBillWave className="text-green-700 mr-2" />
+        <span className="text-green-700 font-medium">Pago Contraentrega</span>
       </div>
     </div>
   );
