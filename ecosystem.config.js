@@ -1,15 +1,21 @@
 module.exports = {
-    apps: [{
-      name: 'frontend',
-      script: 'node_modules/next/dist/bin/next',
-      args: 'start',
-      instances: 2,
-      exec_mode: 'cluster',
-      watch: false,
-      env: {
-        PORT: 3000,
-        NODE_ENV: 'production',
-        NEXT_PUBLIC_API_URL: 'https://api.prontapp.co/api/v1'
-      }
-    }]
-  }
+  apps: [{
+    name: 'prontapp-frontend',
+    script: 'npm',
+    args: 'start',
+    cwd: '/var/www/frontend',
+    instances: 1,
+    exec_mode: 'fork',
+    env: {
+      NODE_ENV: 'production',
+      PORT: 3000
+    },
+    error_file: '/var/www/frontend/logs/err.log',
+    out_file: '/var/www/frontend/logs/out.log',
+    log_file: '/var/www/frontend/logs/combined.log',
+    time: true,
+    autorestart: true,
+    max_restarts: 10,
+    min_uptime: '10s'
+  }]
+};
