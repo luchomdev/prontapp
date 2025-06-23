@@ -57,7 +57,10 @@ jobs:
           ENV_EOF"
           
           echo "📦 Instalando dependencias..."
-          ssh ec2 "cd ${DEPLOY_PATH} && npm cache clean --force && npm install --production"
+          ssh ec2 "cd ${DEPLOY_PATH} && npm cache clean --force && npm install"
+          
+          echo "�� Instalando tipos faltantes..."
+          ssh ec2 "cd ${DEPLOY_PATH} && npm install --save-dev @types/web-push"
           
           echo "🏗️ Construyendo aplicación..."
           ssh ec2 "cd ${DEPLOY_PATH} && NODE_OPTIONS='--max-old-space-size=1024' npm run build"
