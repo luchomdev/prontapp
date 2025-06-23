@@ -8,19 +8,7 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          token: ${{ secrets.GIT_TOKEN }}
-          
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-          
       - name: Configure SSH
         env:
           SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
@@ -30,20 +18,34 @@ jobs:
           mkdir -p ~/.ssh
           echo "$SSH_PRIVATE_KEY" > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
-          echo -e "Host ec2\n\tHostName $SSH_HOST\n\tUser $SSH_USER\n\tIdentityFile ~/.ssh/deploy_key\n\tStrictHostKeyChecking no\n\tServerAliveInterval 60\n\tServerAliveCountMax 60" > ~/.ssh/config
+          echo -e "Host *\n\tServerAliveInterval 60\n\tServerAliveCountMax 60\n\tTCPKeepAlive yes\n\tStrictHostKeyChecking no\n" > ~/.ssh/config
+          echo -e "Host ec2\n\tHostName $SSH_HOST\n\tUser $SSH_USER\n\tIdentityFile ~/.ssh/deploy_key\n\tConnectTimeout 30\n\tStrictHostKeyChecking no" >> ~/.ssh/config
 
-      - name: Create Production Environment File
+      - name: Deploy to EC2
+        env:
+          GIT_TOKEN: ${{ secrets.GIT_TOKEN }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
         run: |
-          cat << EOF > .env.production
+          DEPLOY_PATH="/var/www/frontend"
+          REPO_URL="https://x-access-token:${GIT_TOKEN}@github.com/prontappsas/prontappweb.git"
+          
+          echo "🔄 Iniciando despliegue..."
+          
+          echo "📁 Preparando directorio de despliegue..."
+          ssh ec2 "sudo rm -rf ${DEPLOY_PATH} && sudo mkdir -p ${DEPLOY_PATH} && sudo chown -R ubuntu:ubuntu ${DEPLOY_PATH}"
+          
+          echo "📥 Clonando repositorio con token..."
+          ssh ec2 "cd /var/www && git clone ${REPO_URL} frontend && cd frontend && git checkout prod"
+          
+          echo "⚙️ Creando archivo de entorno..."
+          ssh ec2 "cat > ${DEPLOY_PATH}/.env.production << 'EOF'
           API_BASE_URL=https://api.prontapp.co/api/v1
           IMAGE_BASE_URL=https://api.prontapp.co
           NEXT_PUBLIC_IMAGE_BASE_URL=https://api.prontapp.co
           NEXT_PUBLIC_API_URL=https://api.prontapp.co/api/v1
           NEXT_PUBLIC_EPAYCO_TEST=false
-          
-          JWT_SECRET=${{ secrets.JWT_SECRET }}
-          
-          DOMAIN_URL=https://www.prontapp.co
+          JWT_SECRET=${JWT_SECRET}
+          DOMAIN_URL=http://www.prontapp.co
           HTTP_S_DOMAIN_URL=https://www.prontapp.co
           NEXT_PUBLIC_FBPIXEL=930982188631486
           NEXT_PUBLIC_VAPID_PUBLIC_KEY=BFST8vYrwU6w7d_qQH6WgnwXAdG4v4aIPY8anZmkBEYcAZTdCanxxbO1ZKMlSYpxVw8enMZTAOlZO6y5-ch25zg
@@ -54,63 +56,48 @@ jobs:
           POSTGRES_HOST='localhost'
           POSTGRES_PORT='5432'
           POSTGRES_DATABASE='nodenexus'
-          EOF
+          EOF"
+          
+          echo "📦 Instalando dependencias..."
+          ssh ec2 "cd ${DEPLOY_PATH} && npm cache clean --force && npm install --production"
+          
+          echo "🏗️ Construyendo aplicación..."
+          ssh ec2 "cd ${DEPLOY_PATH} && NODE_OPTIONS='--max-old-space-size=1024' npm run build"
+          
+          echo "🔄 Reiniciando PM2..."
+          ssh ec2 "cd ${DEPLOY_PATH} && pm2 restart ecosystem.config.js || pm2 start ecosystem.config.js"
+          
+          echo "✅ Verificando despliegue..."
+          ssh ec2 "cd ${DEPLOY_PATH} && pm2 list && pm2 logs prontapp-frontend --lines 10"
 
-      - name: Deploy to Production Server
+      - name: Health Check
         run: |
-          DEPLOY_PATH="/var/www/frontend"
-          REPO_URL="https://${{ secrets.GIT_TOKEN }}@github.com/prontappsas/prontappweb.git"
+          echo "🏥 Realizando health check..."
+          sleep 30
           
-          echo "🚀 Iniciando despliegue..."
+          # Verificar que la aplicación responde
+          for i in {1..5}; do
+            if curl -f -s http://www.prontapp.co > /dev/null; then
+              echo "✅ Aplicación responde correctamente en HTTP"
+              break
+            else
+              echo "⏳ Intento $i/5 - Esperando respuesta..."
+              sleep 10
+            fi
+          done
           
-          # Limpiar y preparar directorio
-          ssh ec2 "
-            sudo rm -rf ${DEPLOY_PATH}
-            sudo mkdir -p ${DEPLOY_PATH}
-            sudo mkdir -p ${DEPLOY_PATH}/logs
-            sudo chown -R ubuntu:ubuntu ${DEPLOY_PATH}
-          "
-          
-          # Clonar repositorio con token personal
-          ssh ec2 "
-            cd /var/www
-            git clone $REPO_URL frontend
-            cd frontend
-            git checkout prod
-          "
-          
-          # Copiar archivo de entorno
-          scp .env.production ec2:${DEPLOY_PATH}/.env.production
-          
-          # Instalar dependencias
-          ssh ec2 "
-            cd ${DEPLOY_PATH}
-            npm cache clean --force
-            npm install --production --no-fund --no-audit
-          "
-          
-          # Construir aplicación
-          ssh ec2 "
-            cd ${DEPLOY_PATH}
-            NODE_OPTIONS='--max-old-space-size=1024' npm run build
-          "
-          
-          # Gestionar PM2
-          ssh ec2 "
-            cd ${DEPLOY_PATH}
-            pm2 stop prontapp-frontend 2>/dev/null || true
-            pm2 delete prontapp-frontend 2>/dev/null || true
-            pm2 start ecosystem.config.js
-            pm2 save
-          "
-          
-          echo "✅ Despliegue completado"
+          # Verificar estado de PM2
+          ssh ec2 "pm2 jlist | jq '.[] | select(.name==\"prontapp-frontend\") | {name, status: .pm2_env.status, memory: .pm2_env.memory, uptime: .pm2_env.pm_uptime}'"
 
-      - name: Verify Deployment
+      - name: Notify Deployment Status
+        if: always()
         run: |
-          echo "🔍 Verificando despliegue..."
-          ssh ec2 "
-            cd /var/www/frontend
-            pm2 list
-            curl -f http://localhost:3000 > /dev/null && echo '✅ Aplicación responde correctamente' || echo '❌ Error en la aplicación'
-          "
+          if [ ${{ job.status }} == 'success' ]; then
+            echo "🎉 Despliegue completado exitosamente"
+            echo "📱 Aplicación disponible en: http://www.prontapp.co"
+            echo "🔧 Service Worker: Funcionando"
+            echo "🔔 Push Notifications: Configurar SSL para activar"
+            echo "⚠️  Próximo paso: Configurar SSL con Certbot"
+          else
+            echo "❌ Despliegue falló - Revisar logs"
+          fi

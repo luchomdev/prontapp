@@ -5,17 +5,20 @@ module.exports = {
     args: 'start',
     cwd: '/var/www/frontend',
     instances: 1,
-    exec_mode: 'fork',
+    autorestart: true,
+    watch: false,
+    max_memory_restart: '1G',
     env: {
       NODE_ENV: 'production',
       PORT: 3000
     },
-    error_file: '/var/www/frontend/logs/err.log',
-    out_file: '/var/www/frontend/logs/out.log',
-    log_file: '/var/www/frontend/logs/combined.log',
-    time: true,
-    autorestart: true,
-    max_restarts: 10,
-    min_uptime: '10s'
+    env_production: {
+      NODE_ENV: 'production',
+      PORT: 3000
+    },
+    error_file: '/var/log/pm2/prontapp-frontend-error.log',
+    out_file: '/var/log/pm2/prontapp-frontend-out.log',
+    log_file: '/var/log/pm2/prontapp-frontend.log',
+    time: true
   }]
-};
+}
