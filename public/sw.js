@@ -1,194 +1,209 @@
-// Nombre y versión de caché
-const CACHE_NAME = 'prontapp-v1';
+/* sw.js — Prontapp
+   Estrategias:
+   - /_next/static  => Cache First
+   - /_next/image   => Network First; si 503/504, intenta fetch directo al ?url=...
+   - Navegación     => Network First con fallback /offline
+   - Misma-origen   => Stale-While-Revalidate
+   - Ignora cross-origin por defecto
+*/
 
-// Recursos básicos para cachear inicialmente
-const urlsToCache = [
-  '/',
-  '/offline'
-];
+const CACHE_VERSION = 'v2';
+const RUNTIME_CACHE = `prontapp-runtime-${CACHE_VERSION}`;
+const STATIC_CACHE = `prontapp-static-${CACHE_VERSION}`;
+const OFFLINE_URL = '/offline';
 
-// Instalación del Service Worker
+// Precarga mínimo viable (shell/offline)
 self.addEventListener('install', (event) => {
-  console.log('Service Worker: Iniciando instalación');
-
   event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then(cache => {
-        console.log('Cache abierto');
-        return cache.addAll(urlsToCache);
-      })
-      .then(() => {
-        console.log('Instalación completada');
-        return self.skipWaiting();
-      })
-      .catch(error => {
-        console.error('Error en la instalación:', error);
-        throw error;
-      })
+    caches.open(STATIC_CACHE).then((cache) => cache.addAll(['/', OFFLINE_URL])).then(() => self.skipWaiting())
   );
 });
 
-// Activación del Service Worker
 self.addEventListener('activate', (event) => {
-  console.log('Service Worker: Activando');
-
   event.waitUntil(
-    caches.keys()
-      .then(cacheNames => {
-        return Promise.all(
-          cacheNames.map(cacheName => {
-            if (cacheName !== CACHE_NAME) {
-              return caches.delete(cacheName);
-            }
-          })
-        );
-      })
-      .then(() => {
-        console.log('Service Worker: Activado');
-        return self.clients.claim();
-      })
+    caches.keys().then((names) =>
+      Promise.all(
+        names.map((n) => {
+          if (![STATIC_CACHE, RUNTIME_CACHE].includes(n)) return caches.delete(n);
+        })
+      )
+    ).then(() => self.clients.claim())
   );
 });
 
-// Fetch
+// Utilidades
+const isSameOrigin = (url) => url.origin === self.location.origin;
+const isNextStatic = (url) => isSameOrigin(url) && url.pathname.startsWith('/_next/static/');
+const isNextImage = (url) => isSameOrigin(url) && url.pathname.startsWith('/_next/image');
+const isHTMLNavigation = (event) => event.request.mode === 'navigate';
+
+// Cache First para assets estáticos de Next
+async function handleNextStatic(event, url) {
+  const cache = await caches.open(STATIC_CACHE);
+  const cached = await cache.match(event.request);
+  if (cached) return cached;
+
+  const resp = await fetch(event.request);
+  if (resp.ok) {
+    cache.put(event.request, resp.clone());
+  }
+  return resp;
+}
+
+// Network First para navegación con fallback offline
+async function handleNavigation(event) {
+  try {
+    const resp = await fetch(event.request);
+    // No cacheamos HTML aquí (depende de tus headers/ISR). Deja que Next controle.
+    return resp;
+  } catch (err) {
+    const cache = await caches.open(STATIC_CACHE);
+    const offline = await cache.match(OFFLINE_URL);
+    return offline || new Response('Sin conexión', { status: 503 });
+  }
+}
+
+// Network First para /_next/image con bypass si 503/504
+async function handleNextImage(event, url) {
+  // 1) Intenta red normal al optimizador
+  try {
+    const resp = await fetch(event.request);
+    if (resp.ok) {
+      const cache = await caches.open(RUNTIME_CACHE);
+      cache.put(event.request, resp.clone());
+      return resp;
+    }
+    // Si el optimizador respondió 5xx, prueba fallback directo a la URL original
+    if (resp.status === 503 || resp.status === 504) {
+      const direct = await fetchOriginalFromImageOptimizer(url);
+      if (direct) return direct;
+      // Si no hay fallback, intenta cache previo
+      const cached = await caches.match(event.request);
+      if (cached) return cached;
+    }
+    return resp; // 4xx/otros casos: devuelve tal cual
+  } catch (err) {
+    // offline/error de red: intenta cache o fallback a origen directo
+    const cached = await caches.match(event.request);
+    if (cached) return cached;
+
+    const direct = await fetchOriginalFromImageOptimizer(url);
+    if (direct) return direct;
+
+    return new Response('Imagen no disponible', { status: 503 });
+  }
+}
+
+// Descarga directa a la URL original (?url=...) y cachea si es OK
+async function fetchOriginalFromImageOptimizer(url) {
+  const originalUrl = url.searchParams.get('url');
+  if (!originalUrl) return null;
+
+  try {
+    const req = new Request(originalUrl, { mode: 'no-cors' }); // evita CORS duro; la respuesta puede ser opaque
+    const resp = await fetch(req);
+
+    // Si es OK (o opaque), entregamos y cacheamos bajo la clave del request original de /_next/image
+    if (resp && (resp.ok || resp.type === 'opaque')) {
+      const cache = await caches.open(RUNTIME_CACHE);
+      // guardamos con una copia del body
+      cache.put(new Request(url.toString(), { method: 'GET' }), resp.clone());
+      return resp;
+    }
+  } catch (e) {
+    // ignora
+  }
+  return null;
+}
+
+// Stale-While-Revalidate simplificado para misma-origen (no HTML, no _next/**
+async function handleSameOriginGeneric(event) {
+  const cache = await caches.open(RUNTIME_CACHE);
+  const cached = await cache.match(event.request);
+  const network = fetch(event.request)
+    .then((resp) => {
+      if (resp && resp.ok) cache.put(event.request, resp.clone());
+      return resp;
+    })
+    .catch(() => null);
+
+  // Devuelve cache inmediatamente si existe; si no, espera red
+  return cached || (await network) || new Response('Recurso no disponible', { status: 503 });
+}
+
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
 
-  event.respondWith(
-    fetch(event.request)
-      .then(response => {
-        if (response.status === 200) {
-          const responseToCache = response.clone();
-          caches.open(CACHE_NAME)
-            .then(cache => {
-              cache.put(event.request, responseToCache);
-            });
-        }
-        return response;
-      })
-      .catch(() => {
-        return caches.match(event.request)
-          .then(response => {
-            if (response) {
-              return response;
-            }
-            if (event.request.mode === 'navigate') {
-              return caches.match('/offline');
-            }
-            return new Response('Recurso no encontrado', { status: 404 });
-          });
-      })
-  );
-});
+  const url = new URL(event.request.url);
 
-// Actualizar el evento push en sw.js
-self.addEventListener('push', (event) => {
-  console.log('Push event recibido:', event);
+  // Ignora cross-origin por defecto (deja que el navegador maneje CORS/CDN)
+  if (!isSameOrigin(url)) return;
 
-  if (!event.data) {
-    console.log('No hay datos en el evento push');
+  // Rutas especiales
+  if (isNextStatic(url)) {
+    event.respondWith(handleNextStatic(event, url));
     return;
   }
 
-  event.waitUntil(
-    (async () => {
-      try {
-        // Verificar si las notificaciones están soportadas
-        if (!self.Notification) {
-          console.log('Notificaciones no soportadas en este contexto');
-          return;
-        }
+  if (isNextImage(url)) {
+    event.respondWith(handleNextImage(event, url));
+    return;
+  }
 
-        const data = event.data.text();
-        console.log('Datos recibidos:', data);
-        
-        const payload = JSON.parse(data);
-        console.log('Payload parseado:', payload);
+  if (isHTMLNavigation(event)) {
+    event.respondWith(handleNavigation(event));
+    return;
+  }
 
-        // Verificar el permiso de notificaciones
-        if (Notification.permission !== 'granted') {
-          console.log('Permiso de notificaciones no otorgado');
-          return;
-        }
-
-        const notificationOptions = {
-          body: payload.body,
-          icon: '/icons/icon-192x192.png', // Ícono principal
-          badge: '/icons/icon-96x96.png', // Ícono pequeño para la barra de notificaciones
-          image: payload.image, // Imagen grande en la notificación (opcional)
-          tag: payload.tag || 'prontapp-notification',
-          requireInteraction: true,
-          renotify: true,
-          vibrate: [100, 50, 100],
-          silent: false,
-          timestamp: Date.now(),
-          data: {
-            url: payload.data?.url || '/',
-            type: payload.type || 'general',
-            id: payload.id
-          },
-          actions: [
-            {
-              action: 'view',
-              title: payload.primaryAction || 'Ver ahora',
-              icon: '/icons/eye-96x96.png'
-            },
-            {
-              action: 'close',
-              title: 'Cerrar',
-              icon: '/icons/close-96x96.png'
-            }
-          ]
-        };
-
-        // Usar try/catch específico para mostrar la notificación
-        try {
-          await self.registration.showNotification(payload.title, notificationOptions);
-          console.log('Notificación mostrada exitosamente');
-        } catch (notificationError) {
-          console.error('Error específico al mostrar la notificación:', notificationError);
-          
-          // Intentar una notificación más simple si la primera falla
-          await self.registration.showNotification(payload.title, {
-            body: payload.body,
-            icon: '/icons/icon-192x192.png'
-          });
-        }
-
-      } catch (error) {
-        console.error('Error al procesar la notificación:', error);
-      }
-    })()
-  );
+  // Genérico para misma-origen (CSS/JS propios, API GET, etc.)
+  event.respondWith(handleSameOriginGeneric(event));
 });
 
-// Click en notificación
+// Push & notification click (tu código original, sin cambios relevantes)
+self.addEventListener('push', (event) => {
+  if (!event.data) return;
+  event.waitUntil((async () => {
+    if (!self.Notification) return;
+    const payload = (() => { try { return JSON.parse(event.data.text()); } catch { return null; } })();
+    if (!payload) return;
+    if (Notification.permission !== 'granted') return;
+
+    const options = {
+      body: payload.body,
+      icon: '/icons/icon-192x192.png',
+      badge: '/icons/icon-96x96.png',
+      image: payload.image,
+      tag: payload.tag || 'prontapp-notification',
+      requireInteraction: true,
+      renotify: true,
+      vibrate: [100, 50, 100],
+      data: { url: payload.data?.url || '/', type: payload.type || 'general', id: payload.id },
+      actions: [
+        { action: 'view', title: payload.primaryAction || 'Ver ahora', icon: '/icons/eye-96x96.png' },
+        { action: 'close', title: 'Cerrar', icon: '/icons/close-96x96.png' }
+      ]
+    };
+
+    try {
+      await self.registration.showNotification(payload.title, options);
+    } catch {
+      await self.registration.showNotification(payload.title, { body: payload.body, icon: '/icons/icon-192x192.png' });
+    }
+  })());
+});
+
 self.addEventListener('notificationclick', (event) => {
-  console.log('Notificación clickeada:', event);
-
   event.notification.close();
-
   if (event.action === 'close') return;
-
   const urlToOpen = event.notification.data?.url || '/';
-
-  event.waitUntil(
-    (async () => {
-      const windowClients = await clients.matchAll({
-        type: 'window',
-        includeUncontrolled: true
-      });
-
-      for (const client of windowClients) {
-        if (client.url === urlToOpen && 'focus' in client) {
-          await client.focus();
-          return;
-        }
-      }
-
-      await clients.openWindow(urlToOpen);
-    })()
-  );
+  event.waitUntil((async () => {
+    const clientsArr = await clients.matchAll({ type: 'window', includeUncontrolled: true });
+    for (const c of clientsArr) {
+      if (c.url === urlToOpen && 'focus' in c) { await c.focus(); return; }
+    }
+    await clients.openWindow(urlToOpen);
+  })());
 });
-// Log inicial para confirmar carga
-console.log('Service Worker: Archivo cargado');
+
+// Log de carga
+console.log('Service Worker cargado (', CACHE_VERSION, ')');

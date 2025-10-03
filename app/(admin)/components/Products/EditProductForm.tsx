@@ -160,7 +160,7 @@ const EditProductForm: React.FC = () => {
 
                 <div>
                     <label className="block text-sm font-medium text-gray-700">Descuento(discount)</label>
-                    <input type="text" name="discount" value={product.discount || ''} onChange={handleInputChange} className="mt-1 block w-full p-2 border border-gray-300 rounded-md" />
+                    <input type="text" name="discount" value={product.discount || 0} onChange={handleInputChange} className="mt-1 block w-full p-2 border border-gray-300 rounded-md" />
                 </div>
 
                 <div>

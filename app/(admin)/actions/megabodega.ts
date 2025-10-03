@@ -64,6 +64,7 @@ export async function fetchMegaProductsServer(
 
 export async function importMegaProductServer(product: MegaProduct): Promise<boolean> {
     try {
+        console.log('Producto -> ', JSON.stringify(product));
         const response = await fetch(
             `${process.env.API_BASE_URL}/products/import-hoko-products`,
             {
