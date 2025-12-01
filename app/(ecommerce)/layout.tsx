@@ -8,6 +8,7 @@ import Main from "@/components/Main";
 import Footer from "@/components/Footer";
 import { getCategoriesPublic, getPublicHighlightCategories } from "@/lib/dataLayer";
 import ScrollToTop from "@/components/ScrollToTop";
+import WhatsAppButton from "@/components/WhatsAppButton";
 import Hydration from "@/components/Hydration";
 import ModalSetAddress from "@/components/ModalSetAddress";
 import { AuthInitializer } from "@/components/auth/AuthInitializer";
@@ -276,6 +277,10 @@ export default async function RootLayout({
           <Main>{children}</Main>
           <Footer />
           <ScrollToTop />
+          < WhatsAppButton
+            phoneNumber="573002541308"
+            message="¡Hola! Quiero informacion sobre un producto en prontapp.co."
+            position="right" />
           <ModalSetAddress />
           <Analytics />
 
