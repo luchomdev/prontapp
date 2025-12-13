@@ -64,13 +64,13 @@ const SigninForm: React.FC<SigninFormProps> = ({
       setUser(result.user);
       setAuthenticated(true);
 
-      // ✅ Si lo estás usando dentro del checkout modal, avanza de paso (no redirecciones)
+      //  Si lo estás usando dentro del checkout modal, avanza de paso (no redirecciones)
       if (onSuccess) {
         onSuccess();
         return;
       }
 
-      // ✅ Comportamiento original (pantalla de login normal)
+      //  Comportamiento original (pantalla de login normal)
       if (result.user.role === 'admin') router.replace('/console/dashboard');
       else router.replace('/');
 

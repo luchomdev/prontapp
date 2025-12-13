@@ -29,7 +29,7 @@ const CheckoutFlowModal: React.FC<CheckoutFlowModalProps> = ({ isOpen, onClose }
 
   const [currentStep, setCurrentStep] = useState<Step>("email");
 
-  // ✅ evita flash: cuando abre, primero bloqueamos UI y luego resolvemos auth
+  // evita flash: cuando abre, primero bloqueamos UI y luego resolvemos auth
   const [authChecked, setAuthChecked] = useState(false);
   const [isSyncingAuth, setIsSyncingAuth] = useState(false);
 
@@ -59,14 +59,14 @@ const CheckoutFlowModal: React.FC<CheckoutFlowModalProps> = ({ isOpen, onClose }
     isSetAddressModalOpen: state.isSetAddressModalOpen,
   }));
 
-  // ✅ signin/register siguen siendo “Identificación”
+  // signin/register siguen siendo “Identificación”
   const stage: Stage = useMemo(() => {
     if (currentStep === "address") return "address";
     if (currentStep === "confirmation") return "confirmation";
     return "identification";
   }, [currentStep]);
 
-  // ✅ CLAVE: antes del primer paint al abrir modal, fuerza estado "cargando"
+  // CLAVE: antes del primer paint al abrir modal, fuerza estado "cargando"
   useLayoutEffect(() => {
     if (!isOpen) return;
     // bloquea UI inmediatamente (antes de pintar)
@@ -76,7 +76,7 @@ const CheckoutFlowModal: React.FC<CheckoutFlowModalProps> = ({ isOpen, onClose }
     setCurrentStep("email");
   }, [isOpen]);
 
-  // ✅ Luego (async) resolvemos auth real por cookie
+  //  Luego (async) resolvemos auth real por cookie
   useEffect(() => {
     if (!isOpen) return;
     if (!hydrated) return;
@@ -95,7 +95,7 @@ const CheckoutFlowModal: React.FC<CheckoutFlowModalProps> = ({ isOpen, onClose }
         if (res.isAuthenticated && res.user) {
           setUser(res.user);
           setAuthenticated(true);
-          setCurrentStep("address"); // ✅ siempre dirección
+          setCurrentStep("address"); //  siempre dirección
           return;
         }
 
@@ -113,7 +113,7 @@ const CheckoutFlowModal: React.FC<CheckoutFlowModalProps> = ({ isOpen, onClose }
     init();
   }, [isOpen, hydrated, isAuthenticated, user, setAuthenticated, setUser]);
 
-  // ✅ cargar direcciones al entrar a address
+  //  cargar direcciones al entrar a address
   useEffect(() => {
     const loadAddresses = async () => {
       if (currentStep !== "address") return;
@@ -133,7 +133,7 @@ const CheckoutFlowModal: React.FC<CheckoutFlowModalProps> = ({ isOpen, onClose }
     loadAddresses();
   }, [currentStep, isAuthenticated]);
 
-  // ✅ si se agregó nueva dirección desde ModalSetAddress, avanzar
+  //  si se agregó nueva dirección desde ModalSetAddress, avanzar
   useEffect(() => {
     if (!isSetAddressModalOpen && shippingAddress && currentStep === "address" && isNewAddress) {
       setCurrentStep("confirmation");
@@ -141,7 +141,7 @@ const CheckoutFlowModal: React.FC<CheckoutFlowModalProps> = ({ isOpen, onClose }
     }
   }, [isSetAddressModalOpen, shippingAddress, currentStep, isNewAddress]);
 
-  // ✅ Escape cierra solo en identificación
+  //  Escape cierra solo en identificación
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === "Escape" && stage === "identification") onClose();
@@ -169,11 +169,11 @@ const CheckoutFlowModal: React.FC<CheckoutFlowModalProps> = ({ isOpen, onClose }
       }
 
       if (result.exists) {
-        setCurrentStep("signin"); // ✅ sigue en Identificación
+        setCurrentStep("signin"); //  sigue en Identificación
         return;
       }
 
-      setCurrentStep("registerPrompt"); // ✅ sigue en Identificación
+      setCurrentStep("registerPrompt"); //  sigue en Identificación
     } catch {
       setEmailError("Error al validar el email. Por favor, intente de nuevo.");
     } finally {
@@ -389,7 +389,7 @@ const CheckoutFlowModal: React.FC<CheckoutFlowModalProps> = ({ isOpen, onClose }
   );
 
   const renderContent = () => {
-    // ✅ nunca muestres email hasta terminar checkAuth
+    //  nunca muestres email hasta terminar checkAuth
     if (!hydrated || !authChecked || isSyncingAuth) {
       return <div className="text-center text-gray-500 py-6">Cargando...</div>;
     }

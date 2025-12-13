@@ -12,8 +12,8 @@ import type { Address } from '@/stores/cartStore';
 import { useHydration } from '@/hooks/useHydration';
 
 interface CheckoutFlowModalProps {
-  isOpen: boolean;
-  onClose: () => void;
+  isOpen?: boolean;
+  onClose?: () => void;
 }
 
 type Step = 'email' | 'signin' | 'registerPrompt' | 'register' | 'address' | 'confirmation';
@@ -41,7 +41,10 @@ const CheckoutFlowModal: React.FC<CheckoutFlowModalProps> = ({ isOpen, onClose }
     setUser,
     shippingAddress,
     setShippingAddress,
+
+    //  controlar este modal desde store
     isSetAddressModalOpen,
+    closeSetAddressModal,
   } = useStore(state => ({
     isAuthenticated: state.isAuthenticated,
     user: state.user,
@@ -49,33 +52,35 @@ const CheckoutFlowModal: React.FC<CheckoutFlowModalProps> = ({ isOpen, onClose }
     setUser: state.setUser,
     shippingAddress: state.shippingAddress,
     setShippingAddress: state.setShippingAddress,
+
     isSetAddressModalOpen: state.isSetAddressModalOpen,
+    closeSetAddressModal: state.closeSetAddressModal,
   }));
 
-  // ✅ FIX: estos pasos (email/signin/register) siguen siendo “Identificación”
+  //  si el layout NO pasa props, el modal se controla por store
+  const modalOpen = isOpen ?? isSetAddressModalOpen;
+  const handleClose = onClose ?? closeSetAddressModal;
+
   const stage: Stage = useMemo(() => {
     if (currentStep === 'address') return 'address';
     if (currentStep === 'confirmation') return 'confirmation';
     return 'identification';
   }, [currentStep]);
 
-  // ✅ Al abrir: sincroniza sesión por cookie; si está logueado SIEMPRE va a Dirección
+  // Al abrir: sincroniza sesión por cookie; si está logueado SIEMPRE va a Dirección
   useEffect(() => {
-    if (!isOpen) return;
+    if (!modalOpen) return;
     if (!hydrated) return;
 
     const init = async () => {
       setIsSyncingAuth(true);
       try {
-        // si store ya autenticado
         if (isAuthenticated && user) {
           setCurrentStep('address');
           return;
         }
 
-        // validar cookie httpOnly
         const res = await checkAuth();
-
         if (res.isAuthenticated && res.user) {
           setUser(res.user);
           setAuthenticated(true);
@@ -83,7 +88,6 @@ const CheckoutFlowModal: React.FC<CheckoutFlowModalProps> = ({ isOpen, onClose }
           return;
         }
 
-        // no autenticado
         setCurrentStep('email');
         setEmail('');
         setEmailError('');
@@ -94,9 +98,9 @@ const CheckoutFlowModal: React.FC<CheckoutFlowModalProps> = ({ isOpen, onClose }
     };
 
     init();
-  }, [isOpen, hydrated, isAuthenticated, user, setAuthenticated, setUser]);
+  }, [modalOpen, hydrated, isAuthenticated, user, setAuthenticated, setUser]);
 
-  // ✅ cargar direcciones al entrar a address
+  // cargar direcciones al entrar a address
   useEffect(() => {
     const loadAddresses = async () => {
       if (currentStep !== 'address') return;
@@ -116,22 +120,17 @@ const CheckoutFlowModal: React.FC<CheckoutFlowModalProps> = ({ isOpen, onClose }
     loadAddresses();
   }, [currentStep, isAuthenticated]);
 
-  // ✅ Si se agregó una nueva dirección desde ModalSetAddress, ir a confirmation
+  // Escape cierra solo en identificación
   useEffect(() => {
-    if (!isSetAddressModalOpen && shippingAddress && currentStep === 'address' && isNewAddress) {
-      setCurrentStep('confirmation');
-      setIsNewAddress(false);
-    }
-  }, [isSetAddressModalOpen, shippingAddress, currentStep, isNewAddress]);
+    if (!modalOpen) return;
 
-  // ✅ Escape cierra solo en identificación
-  useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && stage === 'identification') onClose();
+      if (e.key === 'Escape' && stage === 'identification') handleClose();
     };
+
     window.addEventListener('keydown', handleEscape);
     return () => window.removeEventListener('keydown', handleEscape);
-  }, [stage, onClose]);
+  }, [modalOpen, stage, handleClose]);
 
   const handleEmailSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -152,11 +151,11 @@ const CheckoutFlowModal: React.FC<CheckoutFlowModalProps> = ({ isOpen, onClose }
       }
 
       if (result.exists) {
-        setCurrentStep('signin'); // ✅ sigue en identificación
+        setCurrentStep('signin');
         return;
       }
 
-      setCurrentStep('registerPrompt'); // ✅ sigue en identificación
+      setCurrentStep('registerPrompt');
     } catch (error) {
       setEmailError('Error al validar el email. Por favor, intente de nuevo.');
     } finally {
@@ -165,7 +164,6 @@ const CheckoutFlowModal: React.FC<CheckoutFlowModalProps> = ({ isOpen, onClose }
   };
 
   const handleSelectSavedAddress = async (address: Address) => {
-    // ✅ guardar como default en backend
     const ok = await setDefaultAddress(address.id);
     if (!ok) console.error('No se pudo establecer la dirección por defecto');
 
@@ -177,11 +175,6 @@ const CheckoutFlowModal: React.FC<CheckoutFlowModalProps> = ({ isOpen, onClose }
     });
 
     setCurrentStep('confirmation');
-  };
-
-  const handleNewAddress = () => {
-    setIsNewAddress(true);
-    useStore.getState().openSetAddressModal();
   };
 
   const renderProgressIndicator = () => {
@@ -196,7 +189,6 @@ const CheckoutFlowModal: React.FC<CheckoutFlowModalProps> = ({ isOpen, onClose }
         />
 
         <div className="relative flex justify-between">
-          {/* Identificación */}
           <div className="flex flex-col items-center">
             <div className={`rounded-full w-10 h-10 flex items-center justify-center text-white relative z-10
               ${stage === 'identification' ? 'bg-orange-500' : 'bg-green-500'}`}>
@@ -205,7 +197,6 @@ const CheckoutFlowModal: React.FC<CheckoutFlowModalProps> = ({ isOpen, onClose }
             <span className="text-xs mt-2">Identificación</span>
           </div>
 
-          {/* Dirección */}
           <div className="flex flex-col items-center">
             <div className={`rounded-full w-10 h-10 flex items-center justify-center text-white relative z-10
               ${stage === 'address' ? 'bg-orange-500' : stage === 'confirmation' ? 'bg-green-500' : 'bg-gray-300'}`}>
@@ -214,7 +205,6 @@ const CheckoutFlowModal: React.FC<CheckoutFlowModalProps> = ({ isOpen, onClose }
             <span className="text-xs mt-2">Dirección</span>
           </div>
 
-          {/* Confirmación */}
           <div className="flex flex-col items-center">
             <div className={`rounded-full w-10 h-10 flex items-center justify-center text-white relative z-10
               ${stage === 'confirmation' ? 'bg-orange-500' : 'bg-gray-300'}`}>
@@ -318,21 +308,11 @@ const CheckoutFlowModal: React.FC<CheckoutFlowModalProps> = ({ isOpen, onClose }
                   <button
                     key={address.id}
                     onClick={() => handleSelectSavedAddress(address)}
-                    className={`w-full text-left p-3 border rounded transition-colors flex items-center gap-2
-                      ${address.default_address
-                        ? 'border-orange-500 bg-orange-50 hover:bg-orange-100'
-                        : 'hover:bg-gray-50'}`}
+                    className={`w-full text-left p-3 border rounded transition-colors flex items-center gap-2 hover:bg-gray-50`}
                   >
-                    <FaMapMarkedAlt className={`flex-shrink-0 ${address.default_address ? 'text-orange-500' : 'text-gray-400'}`} />
+                    <FaMapMarkedAlt className="flex-shrink-0 text-gray-400" />
                     <div className="flex-grow">
-                      <div className="flex items-center justify-between">
-                        <p className="font-medium">{address.cityName}</p>
-                        {address.default_address && (
-                          <span className="text-xs text-orange-500 font-medium px-2 py-1 bg-orange-100 rounded-full">
-                            Dirección principal
-                          </span>
-                        )}
-                      </div>
+                      <p className="font-medium">{address.cityName}</p>
                       <p className="text-sm text-gray-600 truncate">{address.address}</p>
                     </div>
                   </button>
@@ -340,29 +320,13 @@ const CheckoutFlowModal: React.FC<CheckoutFlowModalProps> = ({ isOpen, onClose }
               </div>
             </div>
           )}
-
-          <div className={`flex items-center my-4 ${savedAddresses.length > 0 ? '' : 'hidden'}`}>
-            <div className="flex-grow border-t border-gray-300"></div>
-            <span className="mx-4 text-sm text-gray-500">O</span>
-            <div className="flex-grow border-t border-gray-300"></div>
-          </div>
-
-          <button
-            onClick={handleNewAddress}
-            className="w-full flex items-center justify-center gap-2 bg-orange-500 text-white py-3 px-4 rounded hover:bg-orange-600 transition-colors"
-          >
-            <FaMapMarkerAlt />
-            {savedAddresses.length > 0 ? 'Agregar nueva dirección' : 'Establecer dirección de envío'}
-          </button>
         </>
       )}
     </div>
   );
 
   const renderContent = () => {
-    if (!hydrated || isSyncingAuth) {
-      return <div className="text-center text-gray-500 py-6">Cargando...</div>;
-    }
+    if (!hydrated || isSyncingAuth) return <div className="text-center text-gray-500 py-6">Cargando...</div>;
 
     switch (currentStep) {
       case 'email':
@@ -382,12 +346,7 @@ const CheckoutFlowModal: React.FC<CheckoutFlowModalProps> = ({ isOpen, onClose }
         return renderRegisterPrompt();
 
       case 'register':
-        return (
-          <RegisterForm
-            initialEmail={email}
-            onSuccess={() => setCurrentStep('address')}
-          />
-        );
+        return <RegisterForm initialEmail={email} onSuccess={() => setCurrentStep('address')} />;
 
       case 'address':
         return renderAddressStep();
@@ -412,14 +371,14 @@ const CheckoutFlowModal: React.FC<CheckoutFlowModalProps> = ({ isOpen, onClose }
     }
   };
 
-  return isOpen ? (
+  return modalOpen ? (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg p-6 max-w-md w-full m-4">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-xl font-bold">Proceso de Compra</h2>
 
           {stage === 'identification' && (
-            <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
+            <button onClick={handleClose} className="text-gray-500 hover:text-gray-700">
               <FaTimes />
             </button>
           )}
@@ -427,9 +386,7 @@ const CheckoutFlowModal: React.FC<CheckoutFlowModalProps> = ({ isOpen, onClose }
 
         {renderProgressIndicator()}
 
-        <div className="mt-6">
-          {renderContent()}
-        </div>
+        <div className="mt-6">{renderContent()}</div>
       </div>
     </div>
   ) : null;
