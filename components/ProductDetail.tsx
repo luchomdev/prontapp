@@ -159,5 +159,4 @@ const ProductDetailComp: React.FC<ProductDetailProps> = ({ product, relatedProdu
         </div>
     );
 };
-
 export default ProductDetailComp;
