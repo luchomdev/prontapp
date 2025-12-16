@@ -1,136 +1,198 @@
-"use client"
-import React, { useState, useEffect } from 'react';
-import Link from 'next/link';
-import { useStore } from '@/stores/cartStore';
-import { validateEmail } from '@/lib/validator'
-import { useRouter } from "next/navigation"
-import { FaEye, FaEyeSlash } from 'react-icons/fa';
-import { signIn } from '@/app/actions/signin';
+"use client";
 
-interface SigninFormProps {
-  onSuccess?: () => void;
+import React, { useEffect, useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { FaEye, FaEyeSlash } from "react-icons/fa";
+
+import { useStore } from "@/stores/cartStore";
+import { validateEmail } from "@/lib/validator";
+import { signIn } from "@/app/actions/signin";
+
+export interface SigninFormProps {
   initialEmail?: string;
+  onSuccess?: () => void;
+
+  // ✅ para el flujo del modal (CheckoutFlowModal)
+  onBack?: () => void;
+  onGoRegister?: () => void;
+
+  // ✅ si viene del checkout, normalmente quieres bloquear el email
+  lockEmail?: boolean;
 }
 
-const SigninForm: React.FC<SigninFormProps> = ({ onSuccess, initialEmail = '' }) => {
-  const router = useRouter()
+const SigninForm: React.FC<SigninFormProps> = ({
+  initialEmail = "",
+  onSuccess,
+  onBack,
+  onGoRegister,
+  lockEmail = true,
+}) => {
+  const router = useRouter();
+
   const [email, setEmail] = useState(initialEmail);
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  
+
   const { setUser, setAuthenticated, setShippingAddress } = useStore((state) => ({
     setUser: state.setUser,
     setAuthenticated: state.setAuthenticated,
-    setShippingAddress: state.setShippingAddress
+    setShippingAddress: state.setShippingAddress,
   }));
 
-  // Actualizar email cuando cambia initialEmail
   useEffect(() => {
-    if (initialEmail) {
-      setEmail(initialEmail);
-    }
+    setEmail(initialEmail || "");
   }, [initialEmail]);
+
+  const togglePasswordVisibility = () => setShowPassword((prev) => !prev);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
+    setError("");
 
     if (!validateEmail(email)) {
-      setError('Por favor, ingrese un email válido.');
+      setError("Por favor, ingrese un email válido.");
       return;
     }
 
-    if (password.trim() === '') {
-      setError('La contraseña no puede estar vacía.');
+    if (password.trim() === "") {
+      setError("La contraseña no puede estar vacía.");
       return;
     }
 
     setIsLoading(true);
-
     try {
       const result = await signIn(email, password);
 
-      if (!result.success || !result.user) {
-        setError(result.error || 'Error al iniciar sesión');
+      if (!result?.success || !result?.user) {
+        setError(result?.error || "Error al iniciar sesión");
         return;
       }
 
       setUser(result.user);
       setAuthenticated(true);
-      
+
+      // Si viene dirección por defecto en el usuario, setéala en el store
       if (result.user.defaultAddress) {
-        const [address, city_id, cityName] = result.user.defaultAddress.split('|~');
-        const [baseAddress, complement] = address.split('~');
-        
-        setShippingAddress({
-          city_id: parseInt(city_id),
-          cityName: cityName,
-          address: baseAddress.trim(),
-          addressComplement: complement ? complement.trim() : ''
-        });
+        try {
+          const [addressRaw, city_idRaw, cityName] = result.user.defaultAddress.split("|~");
+          const [baseAddress, complement] = addressRaw.split("~");
+
+          setShippingAddress({
+            city_id: parseInt(city_idRaw, 10),
+            cityName: cityName,
+            address: (baseAddress || "").trim(),
+            addressComplement: complement ? complement.trim() : "",
+          });
+        } catch {
+          // si el formato viene raro, no rompas el login
+        }
       }
 
+      // ✅ si estás dentro del modal, el modal decide qué hacer
       if (onSuccess) {
         onSuccess();
-      } else if (result.user.role === 'admin') {
+        return;
+      }
+
+      // ✅ comportamiento original fuera del modal
+      if (result.user.role === "admin") {
         router.replace("/console/dashboard");
       } else {
         router.replace("/");
       }
-    } catch (error) {
-      setError('Error al intentar iniciar sesión. Por favor, intente de nuevo.');
+    } catch {
+      setError("Error al intentar iniciar sesión. Por favor, intente de nuevo.");
     } finally {
       setIsLoading(false);
     }
   };
 
-  const togglePasswordVisibility = () => {
-    setShowPassword(!showPassword);
-  };
+  const emailReadOnly = lockEmail && !!initialEmail;
 
   return (
-    <form name='SigninForm' onSubmit={handleSubmit}>
-      <input
-        name='email'
-        type="email"
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
-        placeholder="Correo electrónico"
-        className="w-full p-2 mb-4 border rounded"
-        required
-        readOnly={!!initialEmail}
-      />
+    <form name="SigninForm" onSubmit={handleSubmit} className="space-y-4">
+      <div>
+        <input
+          name="email"
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder="Correo electrónico"
+          className="w-full p-2 border rounded"
+          required
+          readOnly={emailReadOnly}
+        />
+
+        {/* Acciones del flujo checkout */}
+        {(onBack || onGoRegister) && (
+          <div className="mt-2 flex items-center justify-between text-sm">
+            {onBack ? (
+              <button
+                type="button"
+                onClick={onBack}
+                className="text-gray-600 hover:text-gray-800"
+                disabled={isLoading}
+              >
+                Cambiar correo
+              </button>
+            ) : (
+              <span />
+            )}
+
+            {onGoRegister ? (
+              <button
+                type="button"
+                onClick={onGoRegister}
+                className="text-orange-600 hover:text-orange-700 font-medium"
+                disabled={isLoading}
+              >
+                Crear cuenta
+              </button>
+            ) : (
+              <span />
+            )}
+          </div>
+        )}
+      </div>
+
       <div className="relative">
         <input
-          name='password'
+          name="password"
           type={showPassword ? "text" : "password"}
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           placeholder="Contraseña"
-          className="w-full p-2 mb-4 border rounded pr-10"
+          className="w-full p-2 border rounded pr-10"
           required
         />
         <button
           type="button"
           onClick={togglePasswordVisibility}
-          className="absolute inset-y-0 -top-3 right-0 pr-3 flex items-center text-sm leading-5"
+          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500"
+          aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
         >
           {showPassword ? <FaEyeSlash /> : <FaEye />}
         </button>
       </div>
-      {error && <p className="text-red-500 mb-4">{error}</p>}
-      <Link onClick={onSuccess} href="/request-password-recovery" className="flex items-center justify-end text-sm text-blue-600 hover:underline mb-4">
-        ¿Olvidaste tu contraseña?
-      </Link>
+
+      {error && <p className="text-red-500 text-sm">{error}</p>}
+
       <button
         type="submit"
-        className="w-full bg-orange-500 text-white py-2 rounded hover:bg-orange-600 mb-4 disabled:bg-orange-300"
+        className="w-full bg-orange-500 text-white py-2 rounded hover:bg-orange-600 disabled:bg-orange-300 disabled:cursor-not-allowed"
         disabled={isLoading}
       >
-        {isLoading ? 'Iniciando sesión...' : 'Iniciar Sesión'}
+        {isLoading ? "Ingresando..." : "Iniciar sesión"}
       </button>
+
+      <div className="text-center">
+        <Link href="/request-password-recovery" className="text-sm text-gray-600 hover:text-gray-800">
+          ¿Olvidaste tu contraseña?
+        </Link>
+      </div>
     </form>
   );
 };
