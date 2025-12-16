@@ -61,7 +61,7 @@ const ModalSetAddress: React.FC = () => {
         try {
           await addAddress(created);
         } catch {
-          // si falla, igual seguimos: shippingAddress es lo importante para checkout
+          //si falla, igual seguimos: shippingAddress es lo importante para checkout
         }
 
         // 4) Setear shippingAddress (esto también cierra el modal en tu store) :contentReference[oaicite:3]{index=3}
